@@ -1,0 +1,139 @@
+import { useRef, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+import Navbar from './components/Navbar'
+import Jar from './components/Jar'
+import Stats from './components/Stats'
+import PomodoroTimer from './components/PomodoroTimer'
+import KanbanBoard from './components/KanbanBoard'
+import { useTaskStore } from './hooks/useTaskStore'
+import { beadColors, colors } from './utils/colors'
+import { scheduleDropSound } from './utils/sound'
+
+export default function App() {
+  const {
+    tasks,
+    beadCount,
+    weeklyCount,
+    streakDays,
+    dailyGoal,
+    weeklyGoal,
+    addTask,
+    moveTask,
+    completeTask,
+    deleteTask,
+    resetJar,
+    setDailyGoal,
+    setWeeklyGoal,
+  } = useTaskStore()
+  const jarRef = useRef(null)
+  const cardRefs = useRef({})
+  const [flyingBeads, setFlyingBeads] = useState([])
+
+  function handleComplete(task) {
+    const cardEl = cardRefs.current[task.id]
+    const jarEl = jarRef.current
+    if (!cardEl || !jarEl) {
+      completeTask(task.id)
+      return
+    }
+
+    const cardRect = cardEl.getBoundingClientRect()
+    const jarRect = jarEl.getBoundingClientRect()
+
+    const beadId = `${task.id}-${Date.now()}`
+    const startX = cardRect.left + cardRect.width / 2 - 8
+    const startY = cardRect.top + cardRect.height / 2 - 8
+    const endX = jarRect.left + jarRect.width / 2 - 8
+    const endY = jarRect.top + jarRect.height / 2 - 8
+
+    setFlyingBeads((beads) => [
+      ...beads,
+      {
+        id: beadId,
+        startX,
+        startY,
+        endX,
+        endY,
+        color: beadColors[beadCount % beadColors.length],
+      },
+    ])
+
+    scheduleDropSound(0.6)
+    completeTask(task.id)
+  }
+
+  function handleFlightComplete(beadId) {
+    setFlyingBeads((beads) => beads.filter((b) => b.id !== beadId))
+  }
+
+  function handleDropTask(taskId, targetCol) {
+    const task = tasks.find((t) => t.id === taskId)
+    if (!task || task.col === targetCol) return
+
+    if (targetCol === 'done') {
+      handleComplete(task)
+    } else {
+      moveTask(taskId, targetCol)
+    }
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col" style={{ background: colors.bg }}>
+      <Navbar streakDays={streakDays} />
+
+      <div className="flex flex-1">
+        <div
+          className="flex flex-col items-center pt-6 px-4"
+          style={{ width: 220, background: colors.bg, borderRight: `1px solid ${colors.border}` }}
+        >
+          <Jar beadCount={beadCount} jarRef={jarRef} onReset={resetJar} />
+          <Stats
+            beadCount={beadCount}
+            weeklyCount={weeklyCount}
+            dailyGoal={dailyGoal}
+            weeklyGoal={weeklyGoal}
+            onSetDailyGoal={setDailyGoal}
+            onSetWeeklyGoal={setWeeklyGoal}
+          />
+          <div className="w-full mt-3">
+            <PomodoroTimer />
+          </div>
+        </div>
+
+        <KanbanBoard
+          tasks={tasks}
+          onStart={(id) => moveTask(id, 'inprog')}
+          onBack={(id) => moveTask(id, 'todo')}
+          onComplete={handleComplete}
+          onAdd={addTask}
+          onDelete={deleteTask}
+          onDropTask={handleDropTask}
+          cardRefs={cardRefs}
+        />
+      </div>
+
+      <AnimatePresence>
+        {flyingBeads.map((bead) => (
+          <motion.div
+            key={bead.id}
+            initial={{ x: bead.startX, y: bead.startY, opacity: 1 }}
+            animate={{ x: bead.endX, y: bead.endY, opacity: 0 }}
+            transition={{ duration: 0.6, ease: 'easeInOut' }}
+            onAnimationComplete={() => handleFlightComplete(bead.id)}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: 16,
+              height: 16,
+              borderRadius: '50%',
+              background: bead.color,
+              pointerEvents: 'none',
+              zIndex: 50,
+            }}
+          />
+        ))}
+      </AnimatePresence>
+    </div>
+  )
+}
