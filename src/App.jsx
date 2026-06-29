@@ -6,11 +6,22 @@ import Stats from './components/Stats'
 import PomodoroTimer from './components/PomodoroTimer'
 import KanbanBoard from './components/KanbanBoard'
 import StatsPage from './components/StatsPage'
+import AuthPage from './components/AuthPage'
 import { useTaskStore } from './hooks/useTaskStore'
+import { useAuth } from './contexts/AuthContext'
 import { beadColors, colors } from './utils/colors'
 import { scheduleDropSound } from './utils/sound'
 
 export default function App() {
+  const { user, loading, signOut } = useAuth()
+
+  if (loading) return null
+  if (!user) return <AuthPage />
+
+  return <Board userId={user.id} onSignOut={signOut} />
+}
+
+function Board({ userId, onSignOut }) {
   const {
     tasks,
     beadCount,
@@ -28,7 +39,7 @@ export default function App() {
     resetStats,
     setDailyGoal,
     setWeeklyGoal,
-  } = useTaskStore()
+  } = useTaskStore(userId)
   const jarRef = useRef(null)
   const cardRefs = useRef({})
   const [flyingBeads, setFlyingBeads] = useState([])
@@ -84,7 +95,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: colors.bg }}>
-      <Navbar streakDays={streakDays} page={page} onNavigate={setPage} />
+      <Navbar streakDays={streakDays} page={page} onNavigate={setPage} onSignOut={onSignOut} />
 
       {page === 'stats' ? (
         <StatsPage categoryCounts={categoryCounts} completedTasks={completedTasks} onResetStats={resetStats} />
