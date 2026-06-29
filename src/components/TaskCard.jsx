@@ -8,6 +8,9 @@ const CATEGORY_LABEL_KEYS = {
   personal: 'categoryPersonal',
 }
 
+const isCoarsePointer =
+  typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches
+
 const TaskCard = forwardRef(function TaskCard({ task, onStart, onBack, onComplete, onDelete }, ref) {
   const { t } = useTranslation()
   const isDone = task.col === 'done'
@@ -23,10 +26,12 @@ const TaskCard = forwardRef(function TaskCard({ task, onStart, onBack, onComplet
   return (
     <div
       ref={ref}
-      draggable
+      draggable={!isCoarsePointer}
       onDragStart={handleDragStart}
       onDragEnd={() => setDragging(false)}
-      className="p-2.5 rounded-[10px] border transition-colors hover:border-borderStrong cursor-grab active:cursor-grabbing"
+      className={`p-2.5 rounded-[10px] border transition-colors hover:border-borderStrong select-none ${
+        isCoarsePointer ? '' : 'cursor-grab active:cursor-grabbing'
+      }`}
       style={{
         borderColor: colors.border,
         background: colors.surface,
@@ -37,19 +42,24 @@ const TaskCard = forwardRef(function TaskCard({ task, onStart, onBack, onComplet
         <button
           onClick={() => !isDone && onComplete(task)}
           disabled={isDone}
-          className="mt-0.5 flex items-center justify-center rounded-full border-2 shrink-0 transition-colors hover:border-accent"
-          style={{
-            width: 18,
-            height: 18,
-            borderColor: isDone ? colors.accent : colors.borderStrong,
-            background: isDone ? colors.accent : 'transparent',
-          }}
+          aria-label="Toggle complete"
+          className="-m-2 p-2 flex items-center justify-center shrink-0"
         >
-          {isDone && (
-            <svg width="10" height="10" viewBox="0 0 10 10">
-              <path d="M1 5 L4 8 L9 1.5" stroke="#fff" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          )}
+          <span
+            className="flex items-center justify-center rounded-full border-2 transition-colors hover:border-accent"
+            style={{
+              width: 18,
+              height: 18,
+              borderColor: isDone ? colors.accent : colors.borderStrong,
+              background: isDone ? colors.accent : 'transparent',
+            }}
+          >
+            {isDone && (
+              <svg width="10" height="10" viewBox="0 0 10 10">
+                <path d="M1 5 L4 8 L9 1.5" stroke="#fff" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </span>
         </button>
 
         <div className="flex-1">
@@ -70,11 +80,11 @@ const TaskCard = forwardRef(function TaskCard({ task, onStart, onBack, onComplet
           </span>
 
           {!isDone && (
-            <div className="flex gap-3 mt-2">
+            <div className="flex gap-4 mt-2 -ml-1">
               {task.col === 'todo' && (
                 <button
                   onClick={() => onStart(task.id)}
-                  className="text-[12px]"
+                  className="text-[12px] py-1 px-1"
                   style={{ color: colors.textSecondary }}
                 >
                   {t('start')}
@@ -84,14 +94,14 @@ const TaskCard = forwardRef(function TaskCard({ task, onStart, onBack, onComplet
                 <>
                   <button
                     onClick={() => onBack(task.id)}
-                    className="text-[12px]"
+                    className="text-[12px] py-1 px-1"
                     style={{ color: colors.textSecondary }}
                   >
                     {t('back')}
                   </button>
                   <button
                     onClick={() => onComplete(task)}
-                    className="text-[12px]"
+                    className="text-[12px] py-1 px-1"
                     style={{ color: colors.accent }}
                   >
                     {t('doneAction')}
@@ -104,8 +114,8 @@ const TaskCard = forwardRef(function TaskCard({ task, onStart, onBack, onComplet
 
         <button
           onClick={() => onDelete(task.id)}
-          className="shrink-0 -mt-0.5 -mr-0.5 flex items-center justify-center rounded-[6px] transition-colors hover:bg-bg"
-          style={{ width: 20, height: 20, color: colors.textMuted }}
+          className="shrink-0 -m-1.5 p-2.5 flex items-center justify-center rounded-[6px] transition-colors hover:bg-bg"
+          style={{ color: colors.textMuted }}
           aria-label="Delete task"
         >
           <svg width="11" height="11" viewBox="0 0 11 11">

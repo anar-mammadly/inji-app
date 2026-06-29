@@ -89,14 +89,14 @@ export default function PomodoroTimer() {
       <div className="flex gap-2 mt-3 w-full">
         <button
           onClick={toggleRunning}
-          className="flex-1 text-[12px] py-1.5 rounded-[8px]"
+          className="flex-1 text-[12px] py-2 rounded-[8px]"
           style={{ background: color, color: '#fff' }}
         >
           {running ? t('pomodoroPause') : t('pomodoroStart')}
         </button>
         <button
           onClick={reset}
-          className="flex-1 text-[12px] py-1.5 rounded-[8px] border"
+          className="flex-1 text-[12px] py-2 rounded-[8px] border"
           style={{ borderColor: colors.border, color: colors.textSecondary }}
         >
           {t('pomodoroReset')}
