@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { seedTasks } from '../utils/seed'
 import { applyDateRollover, todayISO } from './useStreak'
 
-const STORAGE_KEY = 'boncuk_state'
+const STORAGE_KEY = 'inji_state'
 const DEFAULT_DAILY_GOAL = 20
 const DEFAULT_WEEKLY_GOAL = 100
 const DEFAULT_CATEGORY_COUNTS = { study: 0, work: 0, personal: 0 }

@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { translations } from './translations'
 
-const STORAGE_KEY = 'boncuk_lang'
+const STORAGE_KEY = 'inji_lang'
 const LanguageContext = createContext(null)
 
 export function LanguageProvider({ children }) {
