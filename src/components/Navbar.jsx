@@ -65,7 +65,7 @@ export default function Navbar({ streakDays, page, onNavigate }) {
 
   const Logo = (
     <div className="text-base font-semibold lowercase shrink-0">
-      b<span style={{ color: colors.accent }}>o</span>ncuk
+      i<span style={{ color: colors.accent }}>n</span>ji
     </div>
   )
 
