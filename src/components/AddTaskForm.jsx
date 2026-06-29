@@ -1,6 +1,12 @@
 import { useState } from 'react'
-import { colors } from '../utils/colors'
+import { colors, categoryStyles } from '../utils/colors'
 import { useTranslation } from '../i18n/LanguageContext'
+
+const CATEGORIES = [
+  { value: 'study', labelKey: 'categoryStudy' },
+  { value: 'work', labelKey: 'categoryWork' },
+  { value: 'personal', labelKey: 'categoryPersonal' },
+]
 
 export default function AddTaskForm({ onAdd, onCancel }) {
   const { t } = useTranslation()
@@ -28,16 +34,28 @@ export default function AddTaskForm({ onAdd, onCancel }) {
         className="w-full px-2 py-1.5 text-[13px] rounded-[6px] border outline-none"
         style={{ borderColor: colors.border }}
       />
-      <select
-        value={category}
-        onChange={(e) => setCategory(e.target.value)}
-        className="w-full px-2 py-1.5 text-[13px] rounded-[6px] border outline-none"
-        style={{ borderColor: colors.border }}
-      >
-        <option value="study">{t('categoryStudy')}</option>
-        <option value="work">{t('categoryWork')}</option>
-        <option value="personal">{t('categoryPersonal')}</option>
-      </select>
+
+      <div className="flex gap-1.5">
+        {CATEGORIES.map(({ value, labelKey }) => {
+          const cat = categoryStyles[value]
+          const selected = category === value
+          return (
+            <button
+              key={value}
+              onClick={() => setCategory(value)}
+              className="flex-1 px-2 py-1.5 rounded-[8px] text-[12px] border transition-colors"
+              style={{
+                background: selected ? cat.bg : 'transparent',
+                color: selected ? cat.text : colors.textMuted,
+                borderColor: selected ? cat.bg : colors.border,
+              }}
+            >
+              {t(labelKey)}
+            </button>
+          )
+        })}
+      </div>
+
       <div className="flex gap-2">
         <button
           onClick={handleAdd}

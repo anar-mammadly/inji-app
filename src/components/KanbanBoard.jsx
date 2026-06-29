@@ -4,7 +4,7 @@ const COLUMN_IDS = ['todo', 'inprog', 'done']
 
 export default function KanbanBoard({ tasks, onStart, onBack, onComplete, onAdd, onDelete, onDropTask, cardRefs }) {
   return (
-    <div className="flex-1 flex gap-4 p-6">
+    <div className="flex-1 flex flex-col sm:flex-row gap-4 p-4 sm:p-6">
       {COLUMN_IDS.map((colId) => (
         <Column
           key={colId}

@@ -5,6 +5,7 @@ import Jar from './components/Jar'
 import Stats from './components/Stats'
 import PomodoroTimer from './components/PomodoroTimer'
 import KanbanBoard from './components/KanbanBoard'
+import StatsPage from './components/StatsPage'
 import { useTaskStore } from './hooks/useTaskStore'
 import { beadColors, colors } from './utils/colors'
 import { scheduleDropSound } from './utils/sound'
@@ -17,17 +18,21 @@ export default function App() {
     streakDays,
     dailyGoal,
     weeklyGoal,
+    categoryCounts,
+    completedTasks,
     addTask,
     moveTask,
     completeTask,
     deleteTask,
     resetJar,
+    resetStats,
     setDailyGoal,
     setWeeklyGoal,
   } = useTaskStore()
   const jarRef = useRef(null)
   const cardRefs = useRef({})
   const [flyingBeads, setFlyingBeads] = useState([])
+  const [page, setPage] = useState('board')
 
   function handleComplete(task) {
     const cardEl = cardRefs.current[task.id]
@@ -79,38 +84,42 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: colors.bg }}>
-      <Navbar streakDays={streakDays} />
+      <Navbar streakDays={streakDays} page={page} onNavigate={setPage} />
 
-      <div className="flex flex-1">
-        <div
-          className="flex flex-col items-center pt-6 px-4"
-          style={{ width: 220, background: colors.bg, borderRight: `1px solid ${colors.border}` }}
-        >
-          <Jar beadCount={beadCount} jarRef={jarRef} onReset={resetJar} />
-          <Stats
-            beadCount={beadCount}
-            weeklyCount={weeklyCount}
-            dailyGoal={dailyGoal}
-            weeklyGoal={weeklyGoal}
-            onSetDailyGoal={setDailyGoal}
-            onSetWeeklyGoal={setWeeklyGoal}
-          />
-          <div className="w-full mt-3">
-            <PomodoroTimer />
+      {page === 'stats' ? (
+        <StatsPage categoryCounts={categoryCounts} completedTasks={completedTasks} onResetStats={resetStats} />
+      ) : (
+        <div className="flex flex-col sm:flex-row flex-1">
+          <div
+            className="flex flex-col items-center pt-6 px-4 pb-4 sm:pb-0 border-b sm:border-b-0 sm:border-r w-full sm:w-[220px] shrink-0"
+            style={{ background: colors.bg, borderColor: colors.border }}
+          >
+            <Jar beadCount={beadCount} jarRef={jarRef} onReset={resetJar} />
+            <Stats
+              beadCount={beadCount}
+              weeklyCount={weeklyCount}
+              dailyGoal={dailyGoal}
+              weeklyGoal={weeklyGoal}
+              onSetDailyGoal={setDailyGoal}
+              onSetWeeklyGoal={setWeeklyGoal}
+            />
+            <div className="w-full mt-3">
+              <PomodoroTimer />
+            </div>
           </div>
-        </div>
 
-        <KanbanBoard
-          tasks={tasks}
-          onStart={(id) => moveTask(id, 'inprog')}
-          onBack={(id) => moveTask(id, 'todo')}
-          onComplete={handleComplete}
-          onAdd={addTask}
-          onDelete={deleteTask}
-          onDropTask={handleDropTask}
-          cardRefs={cardRefs}
-        />
-      </div>
+          <KanbanBoard
+            tasks={tasks}
+            onStart={(id) => moveTask(id, 'inprog')}
+            onBack={(id) => moveTask(id, 'todo')}
+            onComplete={handleComplete}
+            onAdd={addTask}
+            onDelete={deleteTask}
+            onDropTask={handleDropTask}
+            cardRefs={cardRefs}
+          />
+        </div>
+      )}
 
       <AnimatePresence>
         {flyingBeads.map((bead) => (

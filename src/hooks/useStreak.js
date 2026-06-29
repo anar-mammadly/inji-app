@@ -10,11 +10,11 @@ function yesterdayISO() {
 
 const HISTORY_LIMIT = 6
 
-export function applyDateRollover({ beadCount, lastActiveDate, streakDays, history = [] }) {
+export function applyDateRollover({ beadCount, lastActiveDate, streakDays, history = [], todayBeadCategories = [] }) {
   const today = todayISO()
 
   if (lastActiveDate === today) {
-    return { beadCount, lastActiveDate, streakDays, history }
+    return { beadCount, lastActiveDate, streakDays, history, todayBeadCategories }
   }
 
   const yesterday = yesterdayISO()
@@ -31,7 +31,13 @@ export function applyDateRollover({ beadCount, lastActiveDate, streakDays, histo
     nextStreak = 0
   }
 
-  return { beadCount: 0, lastActiveDate: today, streakDays: nextStreak, history: nextHistory }
+  return {
+    beadCount: 0,
+    lastActiveDate: today,
+    streakDays: nextStreak,
+    history: nextHistory,
+    todayBeadCategories: [],
+  }
 }
 
 export { todayISO, yesterdayISO }

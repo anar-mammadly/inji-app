@@ -11,6 +11,8 @@ const ROWS = [
   { y: 116, count: 5 },
   { y: 100, count: 4 },
   { y: 84, count: 4 },
+  { y: 68, count: 4 },
+  { y: 52, count: 4 },
 ]
 
 const MAX_VISIBLE_BEADS = ROWS.reduce((sum, row) => sum + row.count, 0)

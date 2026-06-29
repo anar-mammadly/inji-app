@@ -59,42 +59,93 @@ function formatDateTime(lang, date) {
   return `${weekday}, ${month} ${day}, ${year} · ${time}`
 }
 
-export default function Navbar({ streakDays }) {
+export default function Navbar({ streakDays, page, onNavigate }) {
   const { lang, setLang, t } = useTranslation()
   const now = useBakuClock()
 
-  return (
+  const Logo = (
+    <div className="text-base font-semibold lowercase shrink-0">
+      b<span style={{ color: colors.accent }}>o</span>ncuk
+    </div>
+  )
+
+  const NavTabs = ({ full } = {}) => (
     <div
-      className="flex items-center justify-between px-6 h-14 border-b"
-      style={{ borderColor: colors.border, background: colors.surface }}
+      className={`flex items-center rounded-[8px] border overflow-hidden text-[12px] font-medium ${full ? 'w-full' : ''}`}
+      style={{ borderColor: colors.border }}
     >
-      <div className="text-base font-semibold lowercase">
-        b<span style={{ color: colors.accent }}>o</span>ncuk
-      </div>
-      <div className="text-sm" style={{ color: colors.textSecondary }}>
-        {formatDateTime(lang, now)}
-      </div>
-      <div className="flex items-center gap-4">
-        <span className="text-sm" style={{ color: colors.textSecondary }}>
-          🔥 {t('streak', { n: streakDays })}
-        </span>
-        <div
-          className="flex items-center rounded-[8px] border overflow-hidden text-[11px] font-medium"
-          style={{ borderColor: colors.border }}
+      {[
+        { id: 'board', label: t('navBoard') },
+        { id: 'stats', label: t('navStats') },
+      ].map(({ id, label }) => (
+        <button
+          key={id}
+          onClick={() => onNavigate(id)}
+          className={`px-3 py-1.5 transition-colors ${full ? 'flex-1' : ''}`}
+          style={{
+            background: page === id ? colors.accent : 'transparent',
+            color: page === id ? '#fff' : colors.textSecondary,
+          }}
         >
-          {['az', 'en'].map((code) => (
-            <button
-              key={code}
-              onClick={() => setLang(code)}
-              className="px-2 py-1 transition-colors"
-              style={{
-                background: lang === code ? colors.accent : 'transparent',
-                color: lang === code ? '#fff' : colors.textSecondary,
-              }}
-            >
-              {code.toUpperCase()}
-            </button>
-          ))}
+          {label}
+        </button>
+      ))}
+    </div>
+  )
+
+  const LangToggle = (
+    <div
+      className="flex items-center rounded-[8px] border overflow-hidden text-[11px] font-medium shrink-0"
+      style={{ borderColor: colors.border }}
+    >
+      {['az', 'en'].map((code) => (
+        <button
+          key={code}
+          onClick={() => setLang(code)}
+          className="px-2 py-1 transition-colors"
+          style={{
+            background: lang === code ? colors.accent : 'transparent',
+            color: lang === code ? '#fff' : colors.textSecondary,
+          }}
+        >
+          {code.toUpperCase()}
+        </button>
+      ))}
+    </div>
+  )
+
+  const Streak = (
+    <span className="text-sm whitespace-nowrap" style={{ color: colors.textSecondary }}>
+      🔥 {t('streak', { n: streakDays })}
+    </span>
+  )
+
+  return (
+    <div className="border-b" style={{ borderColor: colors.border, background: colors.surface }}>
+      {/* mobile layout */}
+      <div className="sm:hidden flex flex-col gap-2 px-4 py-3">
+        <div className="flex items-center justify-between">
+          {Logo}
+          {LangToggle}
+        </div>
+        <NavTabs full />
+        <div className="text-center text-[11px]" style={{ color: colors.textSecondary }}>
+          {formatDateTime(lang, now)} · 🔥 {streakDays}
+        </div>
+      </div>
+
+      {/* desktop layout */}
+      <div className="hidden sm:flex items-center justify-between px-6 h-14">
+        <div className="flex items-center gap-5">
+          {Logo}
+          <NavTabs />
+        </div>
+        <div className="text-sm" style={{ color: colors.textSecondary }}>
+          {formatDateTime(lang, now)}
+        </div>
+        <div className="flex items-center gap-4">
+          {Streak}
+          {LangToggle}
         </div>
       </div>
     </div>

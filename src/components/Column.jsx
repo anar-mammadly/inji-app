@@ -38,7 +38,7 @@ export default function Column({ colId, tasks, onStart, onBack, onComplete, onAd
       onDragOver={handleDragOver}
       onDragLeave={() => setDragOver(false)}
       onDrop={handleDrop}
-      className="flex-1 flex flex-col rounded-[10px] border p-3 min-h-[200px] transition-colors"
+      className="w-full sm:flex-1 flex flex-col rounded-[10px] border p-3 min-h-[160px] sm:min-h-[200px] transition-colors"
       style={{
         borderTopColor: dragOver ? colors.accent : colors.border,
         borderRightColor: dragOver ? colors.accent : colors.border,
