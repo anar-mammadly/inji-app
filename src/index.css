@@ -4,8 +4,10 @@
 
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
+html,
 body {
   margin: 0;
   font-family: 'Inter', sans-serif;
@@ -13,4 +15,31 @@ body {
   line-height: 1.6;
   color: #2c2c2a;
   background: #f9f7f4;
+  overscroll-behavior-y: none;
+  -webkit-text-size-adjust: 100%;
+}
+
+#root {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+button,
+a {
+  touch-action: manipulation;
+}
+
+/* Prevent iOS Safari from auto-zooming the page when an input is focused. */
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+@supports (padding: max(0px)) {
+  #root {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }

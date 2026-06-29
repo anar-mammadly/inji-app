@@ -94,7 +94,7 @@ function Board({ userId, onSignOut }) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: colors.bg }}>
+    <div className="min-h-dvh flex flex-col" style={{ background: colors.bg }}>
       <Navbar streakDays={streakDays} page={page} onNavigate={setPage} onSignOut={onSignOut} />
 
       {page === 'stats' ? (

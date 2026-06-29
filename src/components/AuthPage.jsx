@@ -30,7 +30,7 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: colors.bg }}>
+    <div className="min-h-dvh flex items-center justify-center px-4 py-8" style={{ background: colors.bg }}>
       <div
         className="w-full max-w-sm rounded-[12px] border p-6"
         style={{ background: colors.surface, borderColor: colors.border }}
@@ -46,20 +46,25 @@ export default function AuthPage() {
           <input
             type="email"
             required
+            inputMode="email"
+            autoCapitalize="none"
+            autoCorrect="off"
+            autoComplete="email"
             placeholder={t('authEmail')}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="px-3 py-2 rounded-[8px] border text-sm outline-none"
+            className="px-3 py-2.5 rounded-[8px] border text-sm outline-none"
             style={{ borderColor: colors.border, color: colors.textPrimary }}
           />
           <input
             type="password"
             required
             minLength={6}
+            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
             placeholder={t('authPassword')}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="px-3 py-2 rounded-[8px] border text-sm outline-none"
+            className="px-3 py-2.5 rounded-[8px] border text-sm outline-none"
             style={{ borderColor: colors.border, color: colors.textPrimary }}
           />
 

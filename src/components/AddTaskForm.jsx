@@ -43,7 +43,7 @@ export default function AddTaskForm({ onAdd, onCancel }) {
             <button
               key={value}
               onClick={() => setCategory(value)}
-              className="flex-1 px-2 py-1.5 rounded-[8px] text-[12px] border transition-colors"
+              className="flex-1 px-2 py-2 rounded-[8px] text-[12px] border transition-colors"
               style={{
                 background: selected ? cat.bg : 'transparent',
                 color: selected ? cat.text : colors.textMuted,
@@ -59,14 +59,14 @@ export default function AddTaskForm({ onAdd, onCancel }) {
       <div className="flex gap-2">
         <button
           onClick={handleAdd}
-          className="flex-1 text-[12px] py-1.5 rounded-[8px]"
+          className="flex-1 text-[12px] py-2 rounded-[8px]"
           style={{ background: colors.accent, color: '#fff' }}
         >
           {t('add')}
         </button>
         <button
           onClick={onCancel}
-          className="flex-1 text-[12px] py-1.5 rounded-[8px] border"
+          className="flex-1 text-[12px] py-2 rounded-[8px] border"
           style={{ borderColor: colors.border, color: colors.textSecondary }}
         >
           {t('cancel')}
