@@ -49,7 +49,7 @@ export const translations = {
     logout: 'Log out',
   },
   az: {
-    todayBeads: 'bugünkü boncuq',
+    todayBeads: 'bugünkü inci',
     streak: '{n} gün ardıcıl',
     waiting: 'TO-DO',
     inProgress: 'İcra olunur',
