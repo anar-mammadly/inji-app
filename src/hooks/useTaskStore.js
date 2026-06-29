@@ -1,48 +1,84 @@
 import { useEffect, useState } from 'react'
 import { seedTasks } from '../utils/seed'
 import { applyDateRollover, todayISO } from './useStreak'
+import { supabase } from '../lib/supabase'
 
-const STORAGE_KEY = 'inji_state'
 const DEFAULT_DAILY_GOAL = 20
 const DEFAULT_WEEKLY_GOAL = 100
 const DEFAULT_CATEGORY_COUNTS = { study: 0, work: 0, personal: 0 }
 
-function loadInitialState() {
-  const raw = localStorage.getItem(STORAGE_KEY)
-  const base = raw
-    ? JSON.parse(raw)
-    : {
-        tasks: seedTasks,
-        beadCount: 0,
-        lastActiveDate: todayISO(),
-        streakDays: 0,
-        history: [],
-        dailyGoal: DEFAULT_DAILY_GOAL,
-        weeklyGoal: DEFAULT_WEEKLY_GOAL,
-        categoryCounts: DEFAULT_CATEGORY_COUNTS,
-        todayBeadCategories: [],
-        completedTasks: [],
-      }
-
-  const rolled = applyDateRollover(base)
+function defaultState() {
   return {
+    tasks: seedTasks,
+    beadCount: 0,
+    lastActiveDate: todayISO(),
+    streakDays: 0,
+    history: [],
     dailyGoal: DEFAULT_DAILY_GOAL,
     weeklyGoal: DEFAULT_WEEKLY_GOAL,
-    history: [],
     categoryCounts: DEFAULT_CATEGORY_COUNTS,
     todayBeadCategories: [],
     completedTasks: [],
+  }
+}
+
+function loadInitialState(storageKey) {
+  const raw = localStorage.getItem(storageKey)
+  const base = raw ? JSON.parse(raw) : defaultState()
+
+  const rolled = applyDateRollover(base)
+  return {
+    ...defaultState(),
     ...base,
     ...rolled,
   }
 }
 
-export function useTaskStore() {
-  const [state, setState] = useState(loadInitialState)
+export function useTaskStore(userId) {
+  const storageKey = `inji_state_${userId}`
+  const [state, setState] = useState(() => loadInitialState(storageKey))
+  const [loaded, setLoaded] = useState(false)
+
+  // Pull the latest saved state for this user from Supabase once on login.
+  useEffect(() => {
+    if (!userId) return
+    let active = true
+
+    supabase
+      .from('user_data')
+      .select('data')
+      .eq('user_id', userId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!active) return
+        if (data?.data) {
+          const rolled = applyDateRollover({ ...defaultState(), ...data.data })
+          setState({ ...defaultState(), ...data.data, ...rolled })
+        }
+        setLoaded(true)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [userId])
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-  }, [state])
+    localStorage.setItem(storageKey, JSON.stringify(state))
+  }, [state, storageKey])
+
+  // Debounced sync to Supabase so every keystroke doesn't fire a request.
+  useEffect(() => {
+    if (!userId || !loaded) return
+    const timeout = setTimeout(() => {
+      supabase.from('user_data').upsert({
+        user_id: userId,
+        data: state,
+        updated_at: new Date().toISOString(),
+      })
+    }, 500)
+    return () => clearTimeout(timeout)
+  }, [state, userId, loaded])
 
   function addTask(name, category, col = 'todo') {
     const task = {

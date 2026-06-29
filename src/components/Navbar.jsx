@@ -59,7 +59,7 @@ function formatDateTime(lang, date) {
   return `${weekday}, ${month} ${day}, ${year} · ${time}`
 }
 
-export default function Navbar({ streakDays, page, onNavigate }) {
+export default function Navbar({ streakDays, page, onNavigate, onSignOut }) {
   const { lang, setLang, t } = useTranslation()
   const now = useBakuClock()
 
@@ -120,13 +120,26 @@ export default function Navbar({ streakDays, page, onNavigate }) {
     </span>
   )
 
+  const LogoutButton = (
+    <button
+      onClick={onSignOut}
+      className="text-[12px] font-medium px-2 py-1 rounded-[8px] border shrink-0"
+      style={{ borderColor: colors.border, color: colors.textSecondary }}
+    >
+      {t('logout')}
+    </button>
+  )
+
   return (
     <div className="border-b" style={{ borderColor: colors.border, background: colors.surface }}>
       {/* mobile layout */}
       <div className="sm:hidden flex flex-col gap-2 px-4 py-3">
         <div className="flex items-center justify-between">
           {Logo}
-          {LangToggle}
+          <div className="flex items-center gap-2">
+            {LangToggle}
+            {LogoutButton}
+          </div>
         </div>
         <NavTabs full />
         <div className="text-center text-[11px]" style={{ color: colors.textSecondary }}>
@@ -146,6 +159,7 @@ export default function Navbar({ streakDays, page, onNavigate }) {
         <div className="flex items-center gap-4">
           {Streak}
           {LangToggle}
+          {LogoutButton}
         </div>
       </div>
     </div>
