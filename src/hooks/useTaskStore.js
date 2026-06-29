@@ -5,6 +5,7 @@ import { applyDateRollover, todayISO } from './useStreak'
 const STORAGE_KEY = 'boncuk_state'
 const DEFAULT_DAILY_GOAL = 20
 const DEFAULT_WEEKLY_GOAL = 100
+const DEFAULT_CATEGORY_COUNTS = { study: 0, work: 0, personal: 0 }
 
 function loadInitialState() {
   const raw = localStorage.getItem(STORAGE_KEY)
@@ -18,6 +19,9 @@ function loadInitialState() {
         history: [],
         dailyGoal: DEFAULT_DAILY_GOAL,
         weeklyGoal: DEFAULT_WEEKLY_GOAL,
+        categoryCounts: DEFAULT_CATEGORY_COUNTS,
+        todayBeadCategories: [],
+        completedTasks: [],
       }
 
   const rolled = applyDateRollover(base)
@@ -25,6 +29,9 @@ function loadInitialState() {
     dailyGoal: DEFAULT_DAILY_GOAL,
     weeklyGoal: DEFAULT_WEEKLY_GOAL,
     history: [],
+    categoryCounts: DEFAULT_CATEGORY_COUNTS,
+    todayBeadCategories: [],
+    completedTasks: [],
     ...base,
     ...rolled,
   }
@@ -57,13 +64,28 @@ export function useTaskStore() {
   }
 
   function completeTask(id) {
-    setState((s) => ({
-      ...s,
-      tasks: s.tasks.map((t) =>
-        t.id === id ? { ...t, col: 'done', completedAt: new Date().toISOString() } : t,
-      ),
-      beadCount: s.beadCount + 1,
-    }))
+    setState((s) => {
+      const task = s.tasks.find((t) => t.id === id)
+      return {
+        ...s,
+        tasks: s.tasks.map((t) =>
+          t.id === id ? { ...t, col: 'done', completedAt: new Date().toISOString() } : t,
+        ),
+        beadCount: s.beadCount + 1,
+        categoryCounts: task
+          ? { ...s.categoryCounts, [task.category]: (s.categoryCounts[task.category] || 0) + 1 }
+          : s.categoryCounts,
+        todayBeadCategories: task
+          ? [...s.todayBeadCategories, task.category]
+          : s.todayBeadCategories,
+        completedTasks: task
+          ? [
+              ...s.completedTasks,
+              { id: task.id, name: task.name, category: task.category, completedAt: new Date().toISOString() },
+            ]
+          : s.completedTasks,
+      }
+    })
   }
 
   function deleteTask(id) {
@@ -71,7 +93,11 @@ export function useTaskStore() {
   }
 
   function resetJar() {
-    setState((s) => ({ ...s, beadCount: 0 }))
+    setState((s) => ({ ...s, beadCount: 0, todayBeadCategories: [] }))
+  }
+
+  function resetStats() {
+    setState((s) => ({ ...s, categoryCounts: DEFAULT_CATEGORY_COUNTS, completedTasks: [] }))
   }
 
   function setDailyGoal(goal) {
@@ -91,11 +117,15 @@ export function useTaskStore() {
     streakDays: state.streakDays,
     dailyGoal: state.dailyGoal,
     weeklyGoal: state.weeklyGoal,
+    categoryCounts: state.categoryCounts,
+    todayBeadCategories: state.todayBeadCategories,
+    completedTasks: state.completedTasks,
     addTask,
     moveTask,
     completeTask,
     deleteTask,
     resetJar,
+    resetStats,
     setDailyGoal,
     setWeeklyGoal,
   }
