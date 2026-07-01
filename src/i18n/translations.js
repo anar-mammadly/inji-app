@@ -54,7 +54,7 @@ export const translations = {
     waiting: 'TO-DO',
     inProgress: 'İcra olunur',
     done: 'Tamamlandı',
-    emptyDone: 'İlk boncuğunuzu əlavə etmək üçün bir tapşırığı tamamlayın',
+    emptyDone: 'İlk incinizi əlavə etmək üçün bir tapşırığı tamamlayın',
     start: 'Başla →',
     back: '← Geri',
     doneAction: 'Hazır ✓',
