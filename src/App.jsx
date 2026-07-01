@@ -7,7 +7,7 @@ import PomodoroTimer from './components/PomodoroTimer'
 import KanbanBoard from './components/KanbanBoard'
 import StatsPage from './components/StatsPage'
 import LearnPage from './components/LearnPage'
-import AuthPage from './components/AuthPage'
+import AuthModal from './components/AuthModal'
 import { useTaskStore } from './hooks/useTaskStore'
 import { useAuth } from './contexts/AuthContext'
 import { beadColors, colors } from './utils/colors'
@@ -15,14 +15,11 @@ import { scheduleDropSound } from './utils/sound'
 
 export default function App() {
   const { user, loading, signOut } = useAuth()
+  const [showAuth, setShowAuth] = useState(false)
 
-  if (loading) return null
-  if (!user) return <AuthPage />
+  // Use user.id when logged in, 'guest' when not
+  const userId = user?.id ?? 'guest'
 
-  return <Board userId={user.id} onSignOut={signOut} />
-}
-
-function Board({ userId, onSignOut }) {
   const {
     tasks,
     beadCount,
@@ -44,10 +41,13 @@ function Board({ userId, onSignOut }) {
     addLearning,
     deleteLearning,
   } = useTaskStore(userId)
+
   const jarRef = useRef(null)
   const cardRefs = useRef({})
   const [flyingBeads, setFlyingBeads] = useState([])
   const [page, setPage] = useState('board')
+
+  if (loading) return null
 
   function handleComplete(task) {
     const cardEl = cardRefs.current[task.id]
@@ -68,14 +68,7 @@ function Board({ userId, onSignOut }) {
 
     setFlyingBeads((beads) => [
       ...beads,
-      {
-        id: beadId,
-        startX,
-        startY,
-        endX,
-        endY,
-        color: beadColors[beadCount % beadColors.length],
-      },
+      { id: beadId, startX, startY, endX, endY, color: beadColors[beadCount % beadColors.length] },
     ])
 
     scheduleDropSound(0.6)
@@ -89,17 +82,20 @@ function Board({ userId, onSignOut }) {
   function handleDropTask(taskId, targetCol) {
     const task = tasks.find((t) => t.id === taskId)
     if (!task || task.col === targetCol) return
-
-    if (targetCol === 'done') {
-      handleComplete(task)
-    } else {
-      moveTask(taskId, targetCol)
-    }
+    if (targetCol === 'done') handleComplete(task)
+    else moveTask(taskId, targetCol)
   }
 
   return (
     <div className="min-h-dvh flex flex-col" style={{ background: colors.bg }}>
-      <Navbar streakDays={streakDays} page={page} onNavigate={setPage} onSignOut={onSignOut} />
+      <Navbar
+        streakDays={streakDays}
+        page={page}
+        onNavigate={setPage}
+        user={user}
+        onSignIn={() => setShowAuth(true)}
+        onSignOut={signOut}
+      />
 
       {page === 'stats' ? (
         <StatsPage categoryCounts={categoryCounts} completedTasks={completedTasks} onResetStats={resetStats} />
@@ -147,18 +143,16 @@ function Board({ userId, onSignOut }) {
             transition={{ duration: 0.6, ease: 'easeInOut' }}
             onAnimationComplete={() => handleFlightComplete(bead.id)}
             style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              width: 16,
-              height: 16,
-              borderRadius: '50%',
-              background: bead.color,
-              pointerEvents: 'none',
-              zIndex: 50,
+              position: 'fixed', top: 0, left: 0,
+              width: 16, height: 16, borderRadius: '50%',
+              background: bead.color, pointerEvents: 'none', zIndex: 50,
             }}
           />
         ))}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
       </AnimatePresence>
     </div>
   )
