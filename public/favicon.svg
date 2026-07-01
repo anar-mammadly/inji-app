@@ -1,5 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="8" fill="#1D9E75"/>
-  <text x="7" y="23" font-family="Georgia, serif" font-size="19" font-weight="700" fill="#ffffff">i</text>
-  <text x="16" y="23" font-family="Georgia, serif" font-size="19" font-weight="700" fill="rgba(255,255,255,0.65)">n</text>
+  <!-- bead body -->
+  <circle cx="16" cy="16" r="14" fill="#1D9E75" stroke="#177a5b" stroke-width="1"/>
+  <!-- shine highlight -->
+  <circle cx="10" cy="10" r="5" fill="white" opacity="0.45"/>
+  <circle cx="12" cy="9" r="2" fill="white" opacity="0.3"/>
 </svg>
