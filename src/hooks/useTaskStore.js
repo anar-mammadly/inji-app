@@ -19,6 +19,7 @@ function defaultState() {
     categoryCounts: DEFAULT_CATEGORY_COUNTS,
     todayBeadCategories: [],
     completedTasks: [],
+    learnings: {},   // { 'YYYY-MM-DD': [{ id, text, createdAt }] }
   }
 }
 
@@ -144,6 +145,27 @@ export function useTaskStore(userId) {
     setState((s) => ({ ...s, weeklyGoal: Math.max(1, goal) }))
   }
 
+  function addLearning(dateISO, text) {
+    const item = { id: String(Date.now()), text, createdAt: new Date().toISOString() }
+    setState((s) => ({
+      ...s,
+      learnings: {
+        ...s.learnings,
+        [dateISO]: [...(s.learnings[dateISO] || []), item],
+      },
+    }))
+  }
+
+  function deleteLearning(dateISO, id) {
+    setState((s) => ({
+      ...s,
+      learnings: {
+        ...s.learnings,
+        [dateISO]: (s.learnings[dateISO] || []).filter((l) => l.id !== id),
+      },
+    }))
+  }
+
   const weeklyCount = state.beadCount + state.history.reduce((sum, h) => sum + h.count, 0)
 
   return {
@@ -156,6 +178,7 @@ export function useTaskStore(userId) {
     categoryCounts: state.categoryCounts,
     todayBeadCategories: state.todayBeadCategories,
     completedTasks: state.completedTasks,
+    learnings: state.learnings || {},
     addTask,
     moveTask,
     completeTask,
@@ -164,5 +187,7 @@ export function useTaskStore(userId) {
     resetStats,
     setDailyGoal,
     setWeeklyGoal,
+    addLearning,
+    deleteLearning,
   }
 }

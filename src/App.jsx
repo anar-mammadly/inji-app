@@ -6,6 +6,7 @@ import Stats from './components/Stats'
 import PomodoroTimer from './components/PomodoroTimer'
 import KanbanBoard from './components/KanbanBoard'
 import StatsPage from './components/StatsPage'
+import LearnPage from './components/LearnPage'
 import AuthPage from './components/AuthPage'
 import { useTaskStore } from './hooks/useTaskStore'
 import { useAuth } from './contexts/AuthContext'
@@ -31,6 +32,7 @@ function Board({ userId, onSignOut }) {
     weeklyGoal,
     categoryCounts,
     completedTasks,
+    learnings,
     addTask,
     moveTask,
     completeTask,
@@ -39,6 +41,8 @@ function Board({ userId, onSignOut }) {
     resetStats,
     setDailyGoal,
     setWeeklyGoal,
+    addLearning,
+    deleteLearning,
   } = useTaskStore(userId)
   const jarRef = useRef(null)
   const cardRefs = useRef({})
@@ -99,6 +103,8 @@ function Board({ userId, onSignOut }) {
 
       {page === 'stats' ? (
         <StatsPage categoryCounts={categoryCounts} completedTasks={completedTasks} onResetStats={resetStats} />
+      ) : page === 'learn' ? (
+        <LearnPage learnings={learnings} onAdd={addLearning} onDelete={deleteLearning} />
       ) : (
         <div className="flex flex-col sm:flex-row flex-1">
           <div
