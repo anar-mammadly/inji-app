@@ -77,6 +77,7 @@ export default function Navbar({ streakDays, page, onNavigate, user, onSignIn, o
       {[
         { id: 'board', label: t('navBoard') },
         { id: 'stats', label: t('navStats') },
+        { id: 'goals', label: t('navGoals') },
         { id: 'learn', label: t('navLearn') },
       ].map(({ id, label }) => (
         <button

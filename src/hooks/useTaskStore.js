@@ -20,6 +20,7 @@ function defaultState() {
     todayBeadCategories: [],
     completedTasks: [],
     learnings: {},   // { 'YYYY-MM-DD': [{ id, text, createdAt }] }
+    goals: [],       // [{ id, text, type, deadline, dueDate, createdAt, completedAt, done }]
   }
 }
 
@@ -146,6 +147,45 @@ export function useTaskStore(userId) {
     setState((s) => ({ ...s, weeklyGoal: Math.max(1, goal) }))
   }
 
+  function addGoal(text, type, deadline) {
+    const daysMap = { '1day': 1, '1week': 7, '1month': 30 }
+    const due = new Date()
+    due.setDate(due.getDate() + (daysMap[deadline] ?? 1))
+    const goal = {
+      id: String(Date.now()),
+      text,
+      type,
+      deadline,
+      dueDate: due.toISOString(),
+      createdAt: new Date().toISOString(),
+      completedAt: null,
+      done: false,
+    }
+    setState((s) => ({ ...s, goals: [...(s.goals || []), goal] }))
+  }
+
+  function completeGoal(id) {
+    setState((s) => ({
+      ...s,
+      goals: (s.goals || []).map((g) =>
+        g.id === id ? { ...g, done: true, completedAt: new Date().toISOString() } : g
+      ),
+    }))
+  }
+
+  function uncompleteGoal(id) {
+    setState((s) => ({
+      ...s,
+      goals: (s.goals || []).map((g) =>
+        g.id === id ? { ...g, done: false, completedAt: null } : g
+      ),
+    }))
+  }
+
+  function deleteGoal(id) {
+    setState((s) => ({ ...s, goals: (s.goals || []).filter((g) => g.id !== id) }))
+  }
+
   function addLearning(dateISO, text) {
     const item = { id: String(Date.now()), text, createdAt: new Date().toISOString() }
     setState((s) => ({
@@ -180,6 +220,7 @@ export function useTaskStore(userId) {
     todayBeadCategories: state.todayBeadCategories,
     completedTasks: state.completedTasks,
     learnings: state.learnings || {},
+    goals: state.goals || [],
     addTask,
     moveTask,
     completeTask,
@@ -190,5 +231,9 @@ export function useTaskStore(userId) {
     setWeeklyGoal,
     addLearning,
     deleteLearning,
+    addGoal,
+    completeGoal,
+    uncompleteGoal,
+    deleteGoal,
   }
 }
