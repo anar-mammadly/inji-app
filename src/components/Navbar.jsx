@@ -59,7 +59,7 @@ function formatDateTime(lang, date) {
   return `${weekday}, ${month} ${day}, ${year} · ${time}`
 }
 
-export default function Navbar({ streakDays, page, onNavigate, onSignOut }) {
+export default function Navbar({ streakDays, page, onNavigate, user, onSignIn, onSignOut }) {
   const { lang, setLang, t } = useTranslation()
   const now = useBakuClock()
 
@@ -121,13 +121,21 @@ export default function Navbar({ streakDays, page, onNavigate, onSignOut }) {
     </span>
   )
 
-  const LogoutButton = (
+  const AuthButton = user ? (
     <button
       onClick={onSignOut}
       className="text-[12px] font-medium px-2 py-1 rounded-[8px] border shrink-0"
       style={{ borderColor: colors.border, color: colors.textSecondary }}
     >
       {t('logout')}
+    </button>
+  ) : (
+    <button
+      onClick={onSignIn}
+      className="text-[12px] font-medium px-2 py-1 rounded-[8px] border shrink-0"
+      style={{ borderColor: colors.accent, color: colors.accent }}
+    >
+      {t('authLoginButton')}
     </button>
   )
 
@@ -139,7 +147,7 @@ export default function Navbar({ streakDays, page, onNavigate, onSignOut }) {
           {Logo}
           <div className="flex items-center gap-2">
             {LangToggle}
-            {LogoutButton}
+            {AuthButton}
           </div>
         </div>
         <NavTabs full />
@@ -160,7 +168,7 @@ export default function Navbar({ streakDays, page, onNavigate, onSignOut }) {
         <div className="flex items-center gap-4">
           {Streak}
           {LangToggle}
-          {LogoutButton}
+          {AuthButton}
         </div>
       </div>
     </div>

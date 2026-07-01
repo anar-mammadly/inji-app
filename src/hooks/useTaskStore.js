@@ -41,8 +41,9 @@ export function useTaskStore(userId) {
   const [loaded, setLoaded] = useState(false)
 
   // Pull the latest saved state for this user from Supabase once on login.
+  // Skip for guest (userId === 'guest') — localStorage only.
   useEffect(() => {
-    if (!userId) return
+    if (!userId || userId === 'guest') { setLoaded(true); return }
     let active = true
 
     supabase
@@ -68,9 +69,9 @@ export function useTaskStore(userId) {
     localStorage.setItem(storageKey, JSON.stringify(state))
   }, [state, storageKey])
 
-  // Debounced sync to Supabase so every keystroke doesn't fire a request.
+  // Debounced sync to Supabase. Skip for guest.
   useEffect(() => {
-    if (!userId || !loaded) return
+    if (!userId || userId === 'guest' || !loaded) return
     const timeout = setTimeout(() => {
       supabase.from('user_data').upsert({
         user_id: userId,
