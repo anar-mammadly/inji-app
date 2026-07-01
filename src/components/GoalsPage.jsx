@@ -3,11 +3,15 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { colors } from '../utils/colors'
 import { useTranslation } from '../i18n/LanguageContext'
 
-const DEADLINES = [
-  { value: '1day',   labelAz: '1 gün',   labelEn: '1 day' },
-  { value: '1week',  labelAz: '1 həftə', labelEn: '1 week' },
-  { value: '1month', labelAz: '1 ay',    labelEn: '1 month' },
-]
+function todayISO() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function defaultDueDate() {
+  const d = new Date()
+  d.setDate(d.getDate() + 7)
+  return d.toISOString().slice(0, 10)
+}
 
 function timeLeft(dueDateISO, lang) {
   const diff = new Date(dueDateISO) - Date.now()
@@ -177,14 +181,15 @@ export default function GoalsPage({ goals = [], onAdd, onComplete, onUncomplete,
   const { lang, t } = useTranslation()
   const [text, setText] = useState('')
   const [type, setType] = useState('short')
-  const [deadline, setDeadline] = useState('1week')
+  const [dueDate, setDueDate] = useState(defaultDueDate)
   const [adding, setAdding] = useState(false)
 
   function handleAdd() {
     const trimmed = text.trim()
-    if (!trimmed) return
-    onAdd(trimmed, type, deadline)
+    if (!trimmed || !dueDate) return
+    onAdd(trimmed, type, new Date(dueDate).toISOString())
     setText('')
+    setDueDate(defaultDueDate())
     setAdding(false)
   }
 
@@ -243,22 +248,23 @@ export default function GoalsPage({ goals = [], onAdd, onComplete, onUncomplete,
               ))}
             </div>
 
-            {/* deadline */}
-            <div className="flex gap-2">
-              {DEADLINES.map(({ value, labelAz, labelEn }) => (
-                <button
-                  key={value}
-                  onClick={() => setDeadline(value)}
-                  className="flex-1 py-1.5 rounded-[8px] border text-[12px] transition-colors"
-                  style={{
-                    background: deadline === value ? colors.purple : 'transparent',
-                    color: deadline === value ? '#fff' : colors.textSecondary,
-                    borderColor: deadline === value ? colors.purple : colors.border,
-                  }}
-                >
-                  {lang === 'az' ? labelAz : labelEn}
-                </button>
-              ))}
+            {/* deadline date picker */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] uppercase font-medium" style={{ color: colors.textMuted }}>
+                {t('goalsDeadline')}
+              </label>
+              <input
+                type="date"
+                value={dueDate}
+                min={todayISO()}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="w-full px-3 py-2 rounded-[8px] border text-sm outline-none"
+                style={{
+                  borderColor: colors.purple,
+                  color: colors.textPrimary,
+                  colorScheme: 'light',
+                }}
+              />
             </div>
 
             <div className="flex gap-2">

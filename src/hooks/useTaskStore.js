@@ -147,16 +147,12 @@ export function useTaskStore(userId) {
     setState((s) => ({ ...s, weeklyGoal: Math.max(1, goal) }))
   }
 
-  function addGoal(text, type, deadline) {
-    const daysMap = { '1day': 1, '1week': 7, '1month': 30 }
-    const due = new Date()
-    due.setDate(due.getDate() + (daysMap[deadline] ?? 1))
+  function addGoal(text, type, dueDate) {
     const goal = {
       id: String(Date.now()),
       text,
       type,
-      deadline,
-      dueDate: due.toISOString(),
+      dueDate,
       createdAt: new Date().toISOString(),
       completedAt: null,
       done: false,
