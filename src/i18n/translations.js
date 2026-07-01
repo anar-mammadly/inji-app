@@ -61,6 +61,7 @@ export const translations = {
     goalsTodo: 'to-do',
     goalsDone: 'Done',
     goalsEmpty: 'No goals yet',
+    goalsDeadline: 'Deadline',
   },
   az: {
     todayBeads: 'bugünkü inci',
@@ -124,5 +125,6 @@ export const translations = {
     goalsTodo: 'gözləyir',
     goalsDone: 'Tamamlandı',
     goalsEmpty: 'Hələ hədəf yoxdur',
+    goalsDeadline: 'Son tarix',
   },
 }
