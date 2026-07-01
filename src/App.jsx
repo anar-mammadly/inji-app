@@ -7,6 +7,7 @@ import PomodoroTimer from './components/PomodoroTimer'
 import KanbanBoard from './components/KanbanBoard'
 import StatsPage from './components/StatsPage'
 import LearnPage from './components/LearnPage'
+import GoalsPage from './components/GoalsPage'
 import AuthModal from './components/AuthModal'
 import { useTaskStore } from './hooks/useTaskStore'
 import { useAuth } from './contexts/AuthContext'
@@ -30,6 +31,7 @@ export default function App() {
     categoryCounts,
     completedTasks,
     learnings,
+    goals,
     addTask,
     moveTask,
     completeTask,
@@ -40,6 +42,10 @@ export default function App() {
     setWeeklyGoal,
     addLearning,
     deleteLearning,
+    addGoal,
+    completeGoal,
+    uncompleteGoal,
+    deleteGoal,
   } = useTaskStore(userId)
 
   const jarRef = useRef(null)
@@ -99,6 +105,14 @@ export default function App() {
 
       {page === 'stats' ? (
         <StatsPage categoryCounts={categoryCounts} completedTasks={completedTasks} onResetStats={resetStats} />
+      ) : page === 'goals' ? (
+        <GoalsPage
+          goals={goals}
+          onAdd={addGoal}
+          onComplete={completeGoal}
+          onUncomplete={uncompleteGoal}
+          onDelete={deleteGoal}
+        />
       ) : page === 'learn' ? (
         <LearnPage learnings={learnings} onAdd={addLearning} onDelete={deleteLearning} />
       ) : (
