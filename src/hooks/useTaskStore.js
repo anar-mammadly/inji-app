@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { seedTasks } from '../utils/seed'
 import { applyDateRollover, todayISO } from './useStreak'
 import { supabase } from '../lib/supabase'
@@ -40,6 +40,16 @@ export function useTaskStore(userId) {
   const storageKey = `inji_state_${userId}`
   const [state, setState] = useState(() => loadInitialState(storageKey))
   const [loaded, setLoaded] = useState(false)
+  const prevUserIdRef = useRef(userId)
+
+  // When userId changes (guest → logged-in or vice-versa) reset state
+  // so guest data doesn't bleed into the real user's Supabase record.
+  useEffect(() => {
+    if (prevUserIdRef.current === userId) return
+    prevUserIdRef.current = userId
+    setLoaded(false)
+    setState(loadInitialState(storageKey))
+  }, [userId, storageKey])
 
   // Pull the latest saved state for this user from Supabase once on login.
   // Skip for guest (userId === 'guest') — localStorage only.
