@@ -42,8 +42,6 @@ export function useTaskStore(userId) {
   const [loaded, setLoaded] = useState(false)
   const prevUserIdRef = useRef(userId)
 
-  // When userId changes (guest → logged-in or vice-versa) reset state
-  // so guest data doesn't bleed into the real user's Supabase record.
   useEffect(() => {
     if (prevUserIdRef.current === userId) return
     prevUserIdRef.current = userId
@@ -51,8 +49,6 @@ export function useTaskStore(userId) {
     setState(loadInitialState(storageKey))
   }, [userId, storageKey])
 
-  // Pull the latest saved state for this user from Supabase once on login.
-  // Skip for guest (userId === 'guest') — localStorage only.
   useEffect(() => {
     if (!userId || userId === 'guest') { setLoaded(true); return }
     let active = true
@@ -80,7 +76,6 @@ export function useTaskStore(userId) {
     localStorage.setItem(storageKey, JSON.stringify(state))
   }, [state, storageKey])
 
-  // Debounced sync to Supabase. Skip for guest.
   useEffect(() => {
     if (!userId || userId === 'guest' || !loaded) return
     const timeout = setTimeout(() => {
@@ -139,6 +134,14 @@ export function useTaskStore(userId) {
 
   function deleteTask(id) {
     setState((s) => ({ ...s, tasks: s.tasks.filter((t) => t.id !== id) }))
+  }
+
+  function editTask(id, newName) {
+    if (!newName.trim()) return
+    setState((s) => ({
+      ...s,
+      tasks: s.tasks.map((t) => (t.id === id ? { ...t, name: newName.trim() } : t)),
+    }))
   }
 
   function resetJar() {
@@ -231,6 +234,7 @@ export function useTaskStore(userId) {
     moveTask,
     completeTask,
     deleteTask,
+    editTask,
     resetJar,
     resetStats,
     setDailyGoal,
