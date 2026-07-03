@@ -27,7 +27,6 @@ function defaultState() {
 function loadInitialState(storageKey) {
   const raw = localStorage.getItem(storageKey)
   const base = raw ? JSON.parse(raw) : defaultState()
-
   const rolled = applyDateRollover(base)
   return {
     ...defaultState(),
@@ -84,9 +83,7 @@ export function useTaskStore(userId) {
         setLoaded(true)
       })
 
-    return () => {
-      active = false
-    }
+    return () => { active = false }
   }, [userId])
 
   useEffect(() => {
