@@ -42,13 +42,26 @@ export function useTaskStore(userId) {
   const [loaded, setLoaded] = useState(false)
   const prevUserIdRef = useRef(userId)
 
+  // When userId changes (guest → logged-in) carry guest data over
+  // so the user doesn't lose tasks they added before logging in.
   useEffect(() => {
     if (prevUserIdRef.current === userId) return
+    const prevUserId = prevUserIdRef.current
     prevUserIdRef.current = userId
     setLoaded(false)
+    if (prevUserId === 'guest' && userId !== 'guest') {
+      // Migrate guest localStorage data to the new user key
+      const guestRaw = localStorage.getItem('inji_state_guest')
+      if (guestRaw) {
+        localStorage.setItem(storageKey, guestRaw)
+        localStorage.removeItem('inji_state_guest')
+      }
+    }
     setState(loadInitialState(storageKey))
   }, [userId, storageKey])
 
+  // Pull the latest saved state for this user from Supabase once on login.
+  // Skip for guest (userId === 'guest') — localStorage only.
   useEffect(() => {
     if (!userId || userId === 'guest') { setLoaded(true); return }
     let active = true
@@ -66,6 +79,10 @@ export function useTaskStore(userId) {
         }
         setLoaded(true)
       })
+      .catch(() => {
+        if (!active) return
+        setLoaded(true)
+      })
 
     return () => {
       active = false
@@ -76,6 +93,7 @@ export function useTaskStore(userId) {
     localStorage.setItem(storageKey, JSON.stringify(state))
   }, [state, storageKey])
 
+  // Debounced sync to Supabase. Skip for guest.
   useEffect(() => {
     if (!userId || userId === 'guest' || !loaded) return
     const timeout = setTimeout(() => {
