@@ -36,6 +36,7 @@ export default function App() {
     moveTask,
     completeTask,
     deleteTask,
+    editTask,
     resetJar,
     resetStats,
     setDailyGoal,
@@ -142,6 +143,7 @@ export default function App() {
             onComplete={handleComplete}
             onAdd={addTask}
             onDelete={deleteTask}
+            onEdit={editTask}
             onDropTask={handleDropTask}
             cardRefs={cardRefs}
           />

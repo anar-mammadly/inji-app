@@ -2,7 +2,7 @@ import Column from './Column'
 
 const COLUMN_IDS = ['todo', 'inprog', 'done']
 
-export default function KanbanBoard({ tasks, onStart, onBack, onComplete, onAdd, onDelete, onDropTask, cardRefs }) {
+export default function KanbanBoard({ tasks, onStart, onBack, onComplete, onAdd, onDelete, onEdit, onDropTask, cardRefs }) {
   return (
     <div className="flex-1 flex flex-col sm:flex-row gap-4 p-4 sm:p-6">
       {COLUMN_IDS.map((colId) => (
@@ -15,6 +15,7 @@ export default function KanbanBoard({ tasks, onStart, onBack, onComplete, onAdd,
           onComplete={onComplete}
           onAdd={onAdd}
           onDelete={onDelete}
+          onEdit={onEdit}
           onDropTask={onDropTask}
           cardRefs={cardRefs}
         />

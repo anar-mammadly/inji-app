@@ -10,7 +10,7 @@ const COLUMN_LABEL_KEYS = {
   done: 'done',
 }
 
-export default function Column({ colId, tasks, onStart, onBack, onComplete, onAdd, onDelete, onDropTask, cardRefs }) {
+export default function Column({ colId, tasks, onStart, onBack, onComplete, onAdd, onDelete, onEdit, onDropTask, cardRefs }) {
   const { t } = useTranslation()
   const [adding, setAdding] = useState(false)
   const [dragOver, setDragOver] = useState(false)
@@ -82,6 +82,7 @@ export default function Column({ colId, tasks, onStart, onBack, onComplete, onAd
             onBack={onBack}
             onComplete={onComplete}
             onDelete={onDelete}
+            onEdit={onEdit}
           />
         ))}
       </div>

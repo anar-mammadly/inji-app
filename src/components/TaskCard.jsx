@@ -13,15 +13,22 @@ const isCoarsePointer =
 
 const SWIPE_THRESHOLD = 60
 
-const TaskCard = forwardRef(function TaskCard({ task, onStart, onBack, onComplete, onDelete }, ref) {
+const TaskCard = forwardRef(function TaskCard({ task, onStart, onBack, onComplete, onDelete, onEdit }, ref) {
   const { t } = useTranslation()
   const isDone = task.col === 'done'
   const cat = categoryStyles[task.category]
   const [dragging, setDragging] = useState(false)
   const [swipeX, setSwipeX] = useState(0)
   const [swiping, setSwiping] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [editValue, setEditValue] = useState(task.name)
   const touchStart = useRef(null)
   const cardRef = useRef(null)
+  const inputRef = useRef(null)
+
+  useEffect(() => {
+    if (editing && inputRef.current) inputRef.current.select()
+  }, [editing])
 
   // Attach touchmove as non-passive so we can call preventDefault
   // (React synthetic events are passive by default, which blocks it).
@@ -139,16 +146,39 @@ const TaskCard = forwardRef(function TaskCard({ task, onStart, onBack, onComplet
             </span>
           </button>
 
-          <div className="flex-1">
-            <div
-              className="text-[13px]"
-              style={{
-                color: isDone ? colors.textMuted : colors.textPrimary,
-                textDecoration: isDone ? 'line-through' : 'none',
-              }}
-            >
-              {task.name}
-            </div>
+          <div className="flex-1 min-w-0">
+            {editing ? (
+              <input
+                ref={inputRef}
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    onEdit(task.id, editValue)
+                    setEditing(false)
+                  } else if (e.key === 'Escape') {
+                    setEditValue(task.name)
+                    setEditing(false)
+                  }
+                }}
+                onBlur={() => {
+                  onEdit(task.id, editValue)
+                  setEditing(false)
+                }}
+                className="w-full text-[13px] outline-none bg-transparent border-b"
+                style={{ color: colors.textPrimary, borderColor: colors.accent }}
+              />
+            ) : (
+              <div
+                className="text-[13px]"
+                style={{
+                  color: isDone ? colors.textMuted : colors.textPrimary,
+                  textDecoration: isDone ? 'line-through' : 'none',
+                }}
+              >
+                {task.name}
+              </div>
+            )}
             <span
               className="inline-block mt-1.5 px-2 py-0.5 rounded-[8px] text-[11px]"
               style={{ background: cat.bg, color: cat.text }}
@@ -189,21 +219,41 @@ const TaskCard = forwardRef(function TaskCard({ task, onStart, onBack, onComplet
             )}
           </div>
 
-          <button
-            onClick={() => onDelete(task.id)}
-            className="shrink-0 -m-1.5 p-2.5 flex items-center justify-center rounded-[6px] transition-colors hover:bg-bg"
-            style={{ color: colors.textMuted }}
-            aria-label="Delete task"
-          >
-            <svg width="11" height="11" viewBox="0 0 11 11">
-              <path
-                d="M1 1 L10 10 M10 1 L1 10"
-                stroke="currentColor"
-                strokeWidth="1.4"
-                strokeLinecap="round"
-              />
-            </svg>
-          </button>
+          <div className="flex items-center shrink-0 gap-0.5">
+            {!isDone && !editing && (
+              <button
+                onClick={() => { setEditValue(task.name); setEditing(true) }}
+                className="-m-1.5 p-2.5 flex items-center justify-center rounded-[6px] transition-colors hover:bg-bg"
+                style={{ color: colors.textMuted }}
+                aria-label="Edit task"
+              >
+                <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                  <path
+                    d="M7.5 1.5 L9.5 3.5 L3.5 9.5 L1 10 L1.5 7.5 Z"
+                    stroke="currentColor"
+                    strokeWidth="1.3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            )}
+            <button
+              onClick={() => onDelete(task.id)}
+              className="-m-1.5 p-2.5 flex items-center justify-center rounded-[6px] transition-colors hover:bg-bg"
+              style={{ color: colors.textMuted }}
+              aria-label="Delete task"
+            >
+              <svg width="11" height="11" viewBox="0 0 11 11">
+                <path
+                  d="M1 1 L10 10 M10 1 L1 10"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
