@@ -19,8 +19,8 @@ function defaultState() {
     categoryCounts: DEFAULT_CATEGORY_COUNTS,
     todayBeadCategories: [],
     completedTasks: [],
-    learnings: {},   // { 'YYYY-MM-DD': [{ id, text, createdAt }] }
-    goals: [],       // [{ id, text, type, deadline, dueDate, createdAt, completedAt, done }]
+    learnings: {},
+    goals: [],
   }
 }
 
@@ -41,27 +41,27 @@ export function useTaskStore(userId) {
   const [state, setState] = useState(() => loadInitialState(storageKey))
   const [loaded, setLoaded] = useState(false)
   const prevUserIdRef = useRef(userId)
+  const skipSaveRef = useRef(false)
 
-  // When userId changes (guest → logged-in) carry guest data over
-  // so the user doesn't lose tasks they added before logging in.
   useEffect(() => {
     if (prevUserIdRef.current === userId) return
     const prevUserId = prevUserIdRef.current
     prevUserIdRef.current = userId
     setLoaded(false)
+    skipSaveRef.current = true
     if (prevUserId === 'guest' && userId !== 'guest') {
-      // Migrate guest localStorage data to the new user key
-      const guestRaw = localStorage.getItem('inji_state_guest')
-      if (guestRaw) {
-        localStorage.setItem(storageKey, guestRaw)
-        localStorage.removeItem('inji_state_guest')
+      const userRaw = localStorage.getItem(storageKey)
+      if (!userRaw) {
+        const guestRaw = localStorage.getItem('inji_state_guest')
+        if (guestRaw) {
+          localStorage.setItem(storageKey, guestRaw)
+        }
       }
+      localStorage.removeItem('inji_state_guest')
     }
     setState(loadInitialState(storageKey))
   }, [userId, storageKey])
 
-  // Pull the latest saved state for this user from Supabase once on login.
-  // Skip for guest (userId === 'guest') — localStorage only.
   useEffect(() => {
     if (!userId || userId === 'guest') { setLoaded(true); return }
     let active = true
@@ -90,10 +90,13 @@ export function useTaskStore(userId) {
   }, [userId])
 
   useEffect(() => {
+    if (skipSaveRef.current) {
+      skipSaveRef.current = false
+      return
+    }
     localStorage.setItem(storageKey, JSON.stringify(state))
   }, [state, storageKey])
 
-  // Debounced sync to Supabase. Skip for guest.
   useEffect(() => {
     if (!userId || userId === 'guest' || !loaded) return
     const timeout = setTimeout(() => {
