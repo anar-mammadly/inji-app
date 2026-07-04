@@ -59,7 +59,7 @@ function formatDateTime(lang, date) {
   return `${weekday}, ${month} ${day}, ${year} · ${time}`
 }
 
-export default function Navbar({ streakDays, page, onNavigate, user, onSignIn, onSignOut }) {
+export default function Navbar({ streakDays, page, onNavigate, user, onSignIn, onSignOut, profileName, profileAvatar }) {
   const { lang, setLang, t } = useTranslation()
   const now = useBakuClock()
 
@@ -122,13 +122,20 @@ export default function Navbar({ streakDays, page, onNavigate, user, onSignIn, o
     </span>
   )
 
+  const initials = profileName?.trim()
+    ? profileName.trim().split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
+    : (user?.email?.[0] ?? '?').toUpperCase()
+
   const AuthButton = user ? (
     <button
-      onClick={onSignOut}
-      className="text-[12px] font-medium px-2 py-1 rounded-[8px] border shrink-0"
-      style={{ borderColor: colors.border, color: colors.textSecondary }}
+      onClick={() => onNavigate('profile')}
+      className="flex items-center justify-center rounded-full text-white text-[12px] font-bold shrink-0 overflow-hidden"
+      style={{ width: 30, height: 30, background: colors.accent, border: page === 'profile' ? `2px solid ${colors.accent}` : '2px solid transparent', outline: page === 'profile' ? `2px solid ${colors.accent}` : 'none', outlineOffset: 1 }}
+      aria-label="Profile"
     >
-      {t('logout')}
+      {profileAvatar
+        ? <img src={profileAvatar} alt="avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+        : initials}
     </button>
   ) : (
     <button

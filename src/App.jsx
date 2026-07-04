@@ -8,8 +8,10 @@ import KanbanBoard from './components/KanbanBoard'
 import StatsPage from './components/StatsPage'
 import LearnPage from './components/LearnPage'
 import GoalsPage from './components/GoalsPage'
+import ProfilePage from './components/ProfilePage'
 import AuthModal from './components/AuthModal'
 import { useTaskStore } from './hooks/useTaskStore'
+import { useProfile } from './hooks/useProfile'
 import { useAuth } from './contexts/AuthContext'
 import { beadColors, colors } from './utils/colors'
 import { scheduleDropSound } from './utils/sound'
@@ -48,6 +50,8 @@ export default function App() {
     uncompleteGoal,
     deleteGoal,
   } = useTaskStore(userId)
+
+  const { profile } = useProfile(userId)
 
   const jarRef = useRef(null)
   const cardRefs = useRef({})
@@ -102,9 +106,13 @@ export default function App() {
         user={user}
         onSignIn={() => setShowAuth(true)}
         onSignOut={signOut}
+        profileName={`${profile.first_name} ${profile.last_name}`.trim()}
+        profileAvatar={profile.avatar_url}
       />
 
-      {page === 'stats' ? (
+      {page === 'profile' ? (
+        <ProfilePage userId={userId} userEmail={user?.email} onSignOut={signOut} />
+      ) : page === 'stats' ? (
         <StatsPage categoryCounts={categoryCounts} completedTasks={completedTasks} onResetStats={resetStats} />
       ) : page === 'goals' ? (
         <GoalsPage
