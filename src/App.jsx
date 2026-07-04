@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import Navbar from './components/Navbar'
 import Jar from './components/Jar'
@@ -10,6 +10,8 @@ import LearnPage from './components/LearnPage'
 import GoalsPage from './components/GoalsPage'
 import ProfilePage from './components/ProfilePage'
 import AuthModal from './components/AuthModal'
+import PullToRefreshIndicator from './components/PullToRefreshIndicator'
+import { usePullToRefresh } from './hooks/usePullToRefresh'
 import { useTaskStore } from './hooks/useTaskStore'
 import { useProfile } from './hooks/useProfile'
 import { useAuth } from './contexts/AuthContext'
@@ -52,6 +54,11 @@ export default function App() {
   } = useTaskStore(userId)
 
   const { profile } = useProfile(userId)
+
+  const handleRefresh = useCallback(() => {
+    window.location.reload()
+  }, [])
+  const { pullY, refreshing } = usePullToRefresh(handleRefresh)
 
   const jarRef = useRef(null)
   const cardRefs = useRef({})
@@ -99,6 +106,7 @@ export default function App() {
 
   return (
     <div className="min-h-dvh flex flex-col" style={{ background: colors.bg }}>
+      <PullToRefreshIndicator pullY={pullY} refreshing={refreshing} />
       <Navbar
         streakDays={streakDays}
         page={page}
