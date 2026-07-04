@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { seedTasks } from '../utils/seed'
 import { applyDateRollover, todayISO } from './useStreak'
 import { supabase } from '../lib/supabase'
 
@@ -9,7 +8,7 @@ const DEFAULT_CATEGORY_COUNTS = { study: 0, work: 0, personal: 0 }
 
 function defaultState() {
   return {
-    tasks: seedTasks,
+    tasks: [],
     beadCount: 0,
     lastActiveDate: todayISO(),
     streakDays: 0,
@@ -70,11 +69,12 @@ export function useTaskStore(userId) {
       .select('data')
       .eq('user_id', userId)
       .maybeSingle()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
         if (!active) return
-        if (data?.data) {
-          const rolled = applyDateRollover({ ...defaultState(), ...data.data })
-          setState({ ...defaultState(), ...data.data, ...rolled })
+        if (!error && data?.data && typeof data.data === 'object') {
+          const merged = { ...defaultState(), ...data.data }
+          const rolled = applyDateRollover(merged)
+          setState({ ...merged, ...rolled })
         }
         setLoaded(true)
       })
@@ -97,11 +97,10 @@ export function useTaskStore(userId) {
   useEffect(() => {
     if (!userId || userId === 'guest' || !loaded) return
     const timeout = setTimeout(() => {
-      supabase.from('user_data').upsert({
-        user_id: userId,
-        data: state,
-        updated_at: new Date().toISOString(),
-      })
+      supabase.from('user_data').upsert(
+        { user_id: userId, data: state, updated_at: new Date().toISOString() },
+        { onConflict: 'user_id' }
+      )
     }, 500)
     return () => clearTimeout(timeout)
   }, [state, userId, loaded])
@@ -154,11 +153,12 @@ export function useTaskStore(userId) {
     setState((s) => ({ ...s, tasks: s.tasks.filter((t) => t.id !== id) }))
   }
 
-  function editTask(id, newName) {
-    if (!newName.trim()) return
+  function editTask(id, name) {
+    const trimmed = name.trim()
+    if (!trimmed) return
     setState((s) => ({
       ...s,
-      tasks: s.tasks.map((t) => (t.id === id ? { ...t, name: newName.trim() } : t)),
+      tasks: s.tasks.map((t) => (t.id === id ? { ...t, name: trimmed } : t)),
     }))
   }
 
