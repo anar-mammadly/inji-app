@@ -97,10 +97,15 @@ export function useTaskStore(userId) {
   useEffect(() => {
     if (!userId || userId === 'guest' || !loaded) return
     const timeout = setTimeout(() => {
-      supabase.from('user_data').upsert(
-        { user_id: userId, data: state, updated_at: new Date().toISOString() },
-        { onConflict: 'user_id' }
-      )
+      supabase
+        .from('user_data')
+        .upsert(
+          { user_id: userId, data: state, updated_at: new Date().toISOString() },
+          { onConflict: 'user_id' }
+        )
+        .then(({ error }) => {
+          if (error) console.error('Supabase sync failed:', error.message)
+        })
     }, 500)
     return () => clearTimeout(timeout)
   }, [state, userId, loaded])
