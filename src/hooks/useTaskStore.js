@@ -18,7 +18,8 @@ function defaultState() {
     categoryCounts: DEFAULT_CATEGORY_COUNTS,
     todayBeadCategories: [],
     completedTasks: [],
-    learnings: {},
+    learnings: {},            // { 'YYYY-MM-DD': [{ id, text, createdAt, categoryId? }] }
+    learningCategories: [],  // [{ id, name, color }]
     goals: [],
   }
 }
@@ -218,14 +219,33 @@ export function useTaskStore(userId) {
     setState((s) => ({ ...s, goals: (s.goals || []).filter((g) => g.id !== id) }))
   }
 
-  function addLearning(dateISO, text) {
-    const item = { id: String(Date.now()), text, createdAt: new Date().toISOString() }
+  function addLearning(dateISO, text, categoryId = null) {
+    const item = { id: String(Date.now()), text, createdAt: new Date().toISOString(), categoryId }
     setState((s) => ({
       ...s,
       learnings: {
         ...s.learnings,
         [dateISO]: [...(s.learnings[dateISO] || []), item],
       },
+    }))
+  }
+
+  function addLearningCategory(name, color) {
+    const cat = { id: String(Date.now()), name, color }
+    setState((s) => ({ ...s, learningCategories: [...(s.learningCategories || []), cat] }))
+  }
+
+  function deleteLearningCategory(id) {
+    setState((s) => ({
+      ...s,
+      learningCategories: (s.learningCategories || []).filter((c) => c.id !== id),
+      // Remove categoryId from items that belonged to this category
+      learnings: Object.fromEntries(
+        Object.entries(s.learnings).map(([date, items]) => [
+          date,
+          items.map((item) => item.categoryId === id ? { ...item, categoryId: null } : item),
+        ])
+      ),
     }))
   }
 
@@ -252,6 +272,7 @@ export function useTaskStore(userId) {
     todayBeadCategories: state.todayBeadCategories,
     completedTasks: state.completedTasks,
     learnings: state.learnings || {},
+    learningCategories: state.learningCategories || [],
     goals: state.goals || [],
     addTask,
     moveTask,
@@ -264,6 +285,8 @@ export function useTaskStore(userId) {
     setWeeklyGoal,
     addLearning,
     deleteLearning,
+    addLearningCategory,
+    deleteLearningCategory,
     addGoal,
     completeGoal,
     uncompleteGoal,

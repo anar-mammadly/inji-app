@@ -35,6 +35,7 @@ export default function App() {
     categoryCounts,
     completedTasks,
     learnings,
+    learningCategories,
     goals,
     addTask,
     moveTask,
@@ -47,6 +48,8 @@ export default function App() {
     setWeeklyGoal,
     addLearning,
     deleteLearning,
+    addLearningCategory,
+    deleteLearningCategory,
     addGoal,
     completeGoal,
     uncompleteGoal,
@@ -131,7 +134,14 @@ export default function App() {
           onDelete={deleteGoal}
         />
       ) : page === 'learn' ? (
-        <LearnPage learnings={learnings} onAdd={addLearning} onDelete={deleteLearning} />
+        <LearnPage
+          learnings={learnings}
+          learningCategories={learningCategories}
+          onAdd={addLearning}
+          onDelete={deleteLearning}
+          onAddCategory={addLearningCategory}
+          onDeleteCategory={deleteLearningCategory}
+        />
       ) : (
         <div className="flex flex-col sm:flex-row flex-1">
           <div
