@@ -15,7 +15,7 @@ const JAR_BODY_PATH = `
   Z
 `
 
-export default function Jar({ beadCount, jarRef, onReset }) {
+export default function Jar({ beadCount, weeklyCount = beadCount, jarRef, onReset }) {
   const { t } = useTranslation()
   const beads = getVisibleBeads(beadCount)
   const [confirming, setConfirming] = useState(false)
@@ -120,7 +120,7 @@ export default function Jar({ beadCount, jarRef, onReset }) {
         ) : (
           <button
             onClick={() => setConfirming(true)}
-            disabled={beadCount === 0}
+            disabled={weeklyCount === 0}
             className="w-full text-[11px] text-center transition-opacity disabled:opacity-40"
             style={{ color: colors.textMuted }}
           >

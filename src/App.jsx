@@ -148,7 +148,7 @@ export default function App() {
             className="flex flex-col items-center pt-6 px-4 pb-4 sm:pb-0 border-b sm:border-b-0 sm:border-r w-full sm:w-[220px] shrink-0"
             style={{ background: colors.bg, borderColor: colors.border }}
           >
-            <Jar beadCount={beadCount} jarRef={jarRef} onReset={resetJar} />
+            <Jar beadCount={beadCount} weeklyCount={weeklyCount} jarRef={jarRef} onReset={resetJar} />
             <Stats
               beadCount={beadCount}
               weeklyCount={weeklyCount}

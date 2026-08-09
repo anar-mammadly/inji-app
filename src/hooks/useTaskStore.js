@@ -169,7 +169,7 @@ export function useTaskStore(userId) {
   }
 
   function resetJar() {
-    setState((s) => ({ ...s, beadCount: 0, todayBeadCategories: [] }))
+    setState((s) => ({ ...s, beadCount: 0, todayBeadCategories: [], history: [] }))
   }
 
   function resetStats() {
