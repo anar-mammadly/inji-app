@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, X } from 'lucide-react'
 import { useTranslation } from '../i18n/LanguageContext'
 import HabitChainCard from './HabitChainCard'
 import Button from './ui/Button'
@@ -22,6 +22,19 @@ export default function HabitsPage({
   const [name, setName] = useState('')
   const [targetDays, setTargetDays] = useState(30)
   const [customDays, setCustomDays] = useState('')
+  const [subOptions, setSubOptions] = useState([])
+  const [newSubOption, setNewSubOption] = useState('')
+
+  function addSubOption() {
+    const trimmed = newSubOption.trim()
+    if (!trimmed || subOptions.includes(trimmed)) return
+    setSubOptions((opts) => [...opts, trimmed])
+    setNewSubOption('')
+  }
+
+  function removeSubOption(label) {
+    setSubOptions((opts) => opts.filter((o) => o !== label))
+  }
 
   function handleSubmit(e) {
     e.preventDefault()
@@ -29,10 +42,12 @@ export default function HabitsPage({
     if (!trimmed) return
     const days = customDays ? Math.max(1, parseInt(customDays, 10) || 30) : targetDays
     const color = HABIT_COLORS[habits.length % HABIT_COLORS.length]
-    onAddHabit(trimmed, { targetDays: days, color })
+    onAddHabit(trimmed, { targetDays: days, color, subOptions })
     setName('')
     setCustomDays('')
     setTargetDays(30)
+    setSubOptions([])
+    setNewSubOption('')
     setAdding(false)
   }
 
@@ -89,6 +104,47 @@ export default function HabitsPage({
               placeholder={t('customDaysPlaceholder')}
               className="w-20 px-2 py-1.5 text-[12px] font-bold rounded-xl border-2 border-border outline-none focus:border-accent"
             />
+          </div>
+
+          <div className="text-[11px] font-extrabold uppercase tracking-wide text-textMuted mt-1">
+            {t('subOptionsLabel')}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {subOptions.map((opt) => (
+              <span
+                key={opt}
+                className="flex items-center gap-1 pl-3 pr-1.5 py-1.5 rounded-xl text-[12px] font-bold border-2 border-accentSoft bg-accentSoft text-accentDark"
+              >
+                {opt}
+                <button
+                  type="button"
+                  onClick={() => removeSubOption(opt)}
+                  className="flex items-center justify-center rounded-full hover:bg-white/40"
+                  style={{ width: 16, height: 16 }}
+                  aria-label={t('deleteOption')}
+                >
+                  <X size={10} strokeWidth={2.5} />
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="flex gap-1.5">
+            <input
+              type="text"
+              value={newSubOption}
+              onChange={(e) => setNewSubOption(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  addSubOption()
+                }
+              }}
+              placeholder={t('newOptionPlaceholder')}
+              className="flex-1 px-2.5 py-1.5 text-[12px] font-semibold rounded-xl border-2 border-border outline-none focus:border-accent"
+            />
+            <Button type="button" variant="secondary" size="sm" onClick={addSubOption}>
+              {t('addOption')}
+            </Button>
           </div>
 
           <Button type="submit" size="sm" className="mt-1">

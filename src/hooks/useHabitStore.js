@@ -9,7 +9,7 @@ export function useHabitStore(state, setState) {
   const habits = state.habits || []
   const habitLog = state.habitLog || {}
 
-  function addHabit(name, { color = null, kind = 'custom', targetDays = 30 } = {}) {
+  function addHabit(name, { color = null, kind = 'custom', targetDays = 30, subOptions = [] } = {}) {
     const trimmed = name.trim()
     if (!trimmed) return
     const habit = {
@@ -19,6 +19,7 @@ export function useHabitStore(state, setState) {
       kind,
       targetDays: Math.max(1, Number(targetDays) || 30),
       startDate: todayISO(),
+      subOptions,
       createdAt: new Date().toISOString(),
     }
     setState((s) => ({ ...s, habits: [...(s.habits || []), habit] }))
