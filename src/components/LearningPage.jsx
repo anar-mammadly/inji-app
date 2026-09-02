@@ -123,7 +123,11 @@ export default function LearningPage({
             onEdit={onEditJournalEntry}
             onDelete={onDeleteJournalEntry}
           />
-          <JournalArchive entries={journalEntries.filter((e) => e.date !== todayKey)} />
+          <JournalArchive
+            entries={journalEntries.filter((e) => e.date !== todayKey)}
+            onEdit={onEditJournalEntry}
+            onDelete={onDeleteJournalEntry}
+          />
         </div>
       ) : (
         <>
