@@ -1,77 +1,61 @@
 import { useState } from 'react'
-import { colors, categoryStyles } from '../utils/colors'
 import { useTranslation } from '../i18n/LanguageContext'
-
-const CATEGORIES = [
-  { value: 'study', labelKey: 'categoryStudy' },
-  { value: 'work', labelKey: 'categoryWork' },
-  { value: 'personal', labelKey: 'categoryPersonal' },
-]
+import { CATEGORIES, CATEGORY_LABEL_KEYS, categoryStyles } from '../utils/categories'
+import Button from './ui/Button'
 
 export default function AddTaskForm({ onAdd, onCancel }) {
   const { t } = useTranslation()
   const [name, setName] = useState('')
-  const [category, setCategory] = useState('study')
+  const [category, setCategory] = useState(CATEGORIES[0])
 
-  function handleAdd() {
+  function handleSubmit(e) {
+    e.preventDefault()
     const trimmed = name.trim()
     if (!trimmed) return
     onAdd(trimmed, category)
   }
 
   return (
-    <div
-      className="p-2 rounded-[10px] border flex flex-col gap-2"
-      style={{ borderColor: colors.border, background: colors.surface }}
-    >
+    <form onSubmit={handleSubmit} className="p-3 rounded-2xl border-2 border-border bg-surface flex flex-col gap-2">
       <input
         autoFocus
         type="text"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
         placeholder={t('taskNamePlaceholder')}
-        className="w-full px-2 py-1.5 text-[13px] rounded-[6px] border outline-none"
-        style={{ borderColor: colors.border }}
+        className="w-full px-3 py-2 text-[13px] font-semibold rounded-xl border-2 border-border outline-none focus:border-accent"
       />
 
       <div className="flex gap-1.5">
-        {CATEGORIES.map(({ value, labelKey }) => {
+        {CATEGORIES.map((value) => {
           const cat = categoryStyles[value]
           const selected = category === value
           return (
             <button
               key={value}
+              type="button"
               onClick={() => setCategory(value)}
-              className="flex-1 px-2 py-2 rounded-[8px] text-[12px] border transition-colors"
+              className="flex-1 px-2 py-1.5 rounded-xl text-[12px] font-bold border-2 border-border transition-colors"
               style={{
                 background: selected ? cat.bg : 'transparent',
-                color: selected ? cat.text : colors.textMuted,
-                borderColor: selected ? cat.bg : colors.border,
+                color: selected ? cat.text : undefined,
+                borderColor: selected ? cat.bg : undefined,
               }}
             >
-              {t(labelKey)}
+              <span className={selected ? '' : 'text-textMuted'}>{t(CATEGORY_LABEL_KEYS[value])}</span>
             </button>
           )
         })}
       </div>
 
       <div className="flex gap-2">
-        <button
-          onClick={handleAdd}
-          className="flex-1 text-[12px] py-2 rounded-[8px]"
-          style={{ background: colors.accent, color: '#fff' }}
-        >
+        <Button type="submit" size="sm" className="flex-1">
           {t('add')}
-        </button>
-        <button
-          onClick={onCancel}
-          className="flex-1 text-[12px] py-2 rounded-[8px] border"
-          style={{ borderColor: colors.border, color: colors.textSecondary }}
-        >
+        </Button>
+        <Button type="button" onClick={onCancel} variant="secondary" size="sm" className="flex-1">
           {t('cancel')}
-        </button>
+        </Button>
       </div>
-    </div>
+    </form>
   )
 }

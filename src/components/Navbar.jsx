@@ -1,3 +1,4 @@
+import { Flame } from 'lucide-react'
 import { colors } from '../utils/colors'
 import { useTranslation } from '../i18n/LanguageContext'
 import { useBakuClock } from '../hooks/useBakuClock'
@@ -36,8 +37,7 @@ function getBakuDateParts(date) {
     year: 'numeric',
   }).formatToParts(date)
 
-  const lookup = Object.fromEntries(parts.map((p) => [p.type, p.value]))
-  return lookup
+  return Object.fromEntries(parts.map((p) => [p.type, p.value]))
 }
 
 function formatBakuTime(date) {
@@ -49,10 +49,13 @@ function formatBakuTime(date) {
   }).format(date)
 }
 
-function formatDateTime(lang, date) {
+function formatDateTime(lang, date, { short } = {}) {
   const { weekday, month, day, year } = getBakuDateParts(date)
   const time = formatBakuTime(date)
 
+  if (short) {
+    return lang === 'az' ? `${day} ${EN_TO_AZ_MONTH[month]} · ${time}` : `${month} ${day} · ${time}`
+  }
   if (lang === 'az') {
     return `${EN_TO_AZ_WEEKDAY[weekday]}, ${day} ${EN_TO_AZ_MONTH[month]} ${year} · ${time}`
   }
@@ -63,65 +66,6 @@ export default function Navbar({ streakDays, page, onNavigate, user, onSignIn, o
   const { lang, setLang, t } = useTranslation()
   const now = useBakuClock()
 
-  const Logo = (
-    <div className="text-base font-semibold lowercase shrink-0">
-      i<span style={{ color: colors.accent }}>n</span>ji
-    </div>
-  )
-
-  const NavTabs = ({ full } = {}) => (
-    <div
-      className={`flex items-center rounded-[8px] border overflow-hidden text-[12px] font-medium ${full ? 'w-full' : ''}`}
-      style={{ borderColor: colors.border }}
-    >
-      {[
-        { id: 'board', label: t('navBoard') },
-        { id: 'stats', label: t('navStats') },
-        { id: 'goals', label: t('navGoals') },
-        { id: 'learn', label: t('navLearn') },
-      ].map(({ id, label }) => (
-        <button
-          key={id}
-          onClick={() => onNavigate(id)}
-          className={`px-3 py-1.5 transition-colors ${full ? 'flex-1' : ''}`}
-          style={{
-            background: page === id ? colors.accent : 'transparent',
-            color: page === id ? '#fff' : colors.textSecondary,
-          }}
-        >
-          {label}
-        </button>
-      ))}
-    </div>
-  )
-
-  const LangToggle = (
-    <div
-      className="flex items-center rounded-[8px] border overflow-hidden text-[11px] font-medium shrink-0"
-      style={{ borderColor: colors.border }}
-    >
-      {['az', 'en'].map((code) => (
-        <button
-          key={code}
-          onClick={() => setLang(code)}
-          className="px-2 py-1 transition-colors"
-          style={{
-            background: lang === code ? colors.accent : 'transparent',
-            color: lang === code ? '#fff' : colors.textSecondary,
-          }}
-        >
-          {code.toUpperCase()}
-        </button>
-      ))}
-    </div>
-  )
-
-  const Streak = (
-    <span className="text-sm whitespace-nowrap" style={{ color: colors.textSecondary }}>
-      🔥 {t('streak', { n: streakDays })}
-    </span>
-  )
-
   const initials = profileName?.trim()
     ? profileName.trim().split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
     : (user?.email?.[0] ?? '?').toUpperCase()
@@ -129,18 +73,25 @@ export default function Navbar({ streakDays, page, onNavigate, user, onSignIn, o
   const AuthButton = user ? (
     <button
       onClick={() => onNavigate('profile')}
-      className="flex items-center justify-center rounded-full text-white text-[12px] font-bold shrink-0 overflow-hidden"
-      style={{ width: 30, height: 30, background: colors.accent, border: page === 'profile' ? `2px solid ${colors.accent}` : '2px solid transparent', outline: page === 'profile' ? `2px solid ${colors.accent}` : 'none', outlineOffset: 1 }}
+      className="flex items-center justify-center rounded-full text-white text-[12px] font-extrabold shrink-0 overflow-hidden border-2"
+      style={{
+        width: 32,
+        height: 32,
+        background: colors.accent,
+        borderColor: page === 'profile' ? colors.accentDark : 'transparent',
+      }}
       aria-label="Profile"
     >
-      {profileAvatar
-        ? <img src={profileAvatar} alt="avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-        : initials}
+      {profileAvatar ? (
+        <img src={profileAvatar} alt="avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+      ) : (
+        initials
+      )}
     </button>
   ) : (
     <button
       onClick={onSignIn}
-      className="text-[12px] font-medium px-2 py-1 rounded-[8px] border shrink-0"
+      className="text-[12px] font-extrabold px-3 py-1.5 rounded-xl border-2 shrink-0"
       style={{ borderColor: colors.accent, color: colors.accent }}
     >
       {t('authLoginButton')}
@@ -148,36 +99,54 @@ export default function Navbar({ streakDays, page, onNavigate, user, onSignIn, o
   )
 
   return (
-    <div className="border-b" style={{ borderColor: colors.border, background: colors.surface }}>
-      {/* mobile layout */}
-      <div className="sm:hidden flex flex-col gap-2 px-4 py-3">
-        <div className="flex items-center justify-between">
-          {Logo}
-          <div className="flex items-center gap-2">
-            {LangToggle}
-            {AuthButton}
-          </div>
+    <div className="border-b border-border bg-surface">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 px-4 sm:px-6 py-3 sm:h-14 sm:py-0">
+        <div className="text-lg font-extrabold lowercase shrink-0">
+          i<span className="text-accent">n</span>ji
         </div>
-        <NavTabs full />
-        <div className="text-center text-[11px]" style={{ color: colors.textSecondary }}>
-          {formatDateTime(lang, now)} · 🔥 {streakDays}
-        </div>
-      </div>
 
-      {/* desktop layout */}
-      <div className="hidden sm:flex items-center justify-between px-6 h-14">
-        <div className="flex items-center gap-5">
-          {Logo}
-          <NavTabs />
+        <div className="flex items-center gap-1 text-[12px] font-extrabold">
+          {[
+            { id: 'board', label: t('navBoard') },
+            { id: 'stats', label: t('navStats') },
+            { id: 'habits', label: t('navHabits') },
+            { id: 'learning', label: t('navLearning') },
+          ].map(({ id, label }) => (
+            <button
+              key={id}
+              onClick={() => onNavigate(id)}
+              className={`px-3 py-1.5 rounded-xl transition-colors whitespace-nowrap ${
+                page === id ? 'bg-accentSoft text-accentDark' : 'text-textSecondary hover:bg-surfaceAlt'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
-        <div className="text-sm" style={{ color: colors.textSecondary }}>
-          {formatDateTime(lang, now)}
+
+        <div className="order-last sm:order-none sm:ml-auto text-[11px] sm:text-sm font-bold text-textSecondary whitespace-nowrap">
+          <span className="sm:hidden">{formatDateTime(lang, now, { short: true })}</span>
+          <span className="hidden sm:inline">{formatDateTime(lang, now)}</span>
         </div>
-        <div className="flex items-center gap-4">
-          {Streak}
-          {LangToggle}
-          {AuthButton}
+
+        <span className="flex items-center gap-1 text-sm font-extrabold text-orange whitespace-nowrap">
+          <Flame size={16} className="text-orange" strokeWidth={2.5} fill="#FF9600" />
+          {t('streak', { n: streakDays })}
+        </span>
+
+        <div className="flex items-center rounded-xl border-2 border-border overflow-hidden text-[11px] font-extrabold shrink-0">
+          {['az', 'en'].map((code) => (
+            <button
+              key={code}
+              onClick={() => setLang(code)}
+              className={`px-2.5 py-1 transition-colors ${lang === code ? 'bg-accent text-white' : 'text-textSecondary'}`}
+            >
+              {code.toUpperCase()}
+            </button>
+          ))}
         </div>
+
+        <div className="shrink-0 ml-auto sm:ml-0">{AuthButton}</div>
       </div>
     </div>
   )

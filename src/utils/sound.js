@@ -46,6 +46,37 @@ export function scheduleDropSound(delaySeconds = 0) {
   osc2.stop(startTime + 0.1)
 }
 
+// A short descending "crack" for an abandoned Pomodoro session's pending bead.
+export function playBeadBreakSound() {
+  const ctx = getContext()
+  const startTime = ctx.currentTime
+
+  const osc = ctx.createOscillator()
+  const gain = ctx.createGain()
+  osc.type = 'sawtooth'
+  osc.frequency.setValueAtTime(320, startTime)
+  osc.frequency.exponentialRampToValueAtTime(60, startTime + 0.22)
+
+  gain.gain.setValueAtTime(0.0001, startTime)
+  gain.gain.exponentialRampToValueAtTime(0.22, startTime + 0.01)
+  gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.24)
+
+  osc.connect(gain).connect(ctx.destination)
+  osc.start(startTime)
+  osc.stop(startTime + 0.26)
+
+  const noise = ctx.createOscillator()
+  const noiseGain = ctx.createGain()
+  noise.type = 'square'
+  noise.frequency.setValueAtTime(900, startTime)
+  noiseGain.gain.setValueAtTime(0.0001, startTime)
+  noiseGain.gain.exponentialRampToValueAtTime(0.06, startTime + 0.005)
+  noiseGain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.05)
+  noise.connect(noiseGain).connect(ctx.destination)
+  noise.start(startTime)
+  noise.stop(startTime + 0.06)
+}
+
 // Three short chimes marking the end of a Pomodoro phase.
 export function playTimerEndSound() {
   const ctx = getContext()
