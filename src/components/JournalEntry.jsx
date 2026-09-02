@@ -1,13 +1,16 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { format } from 'date-fns'
 import { Pencil, X } from 'lucide-react'
 import { useTranslation } from '../i18n/LanguageContext'
 import Button from './ui/Button'
+import MarkdownToolbar from './MarkdownToolbar'
+import MarkdownContent from './MarkdownContent'
 
 function JournalItem({ entry, onEdit, onDelete }) {
   const { t } = useTranslation()
   const [editing, setEditing] = useState(false)
   const [value, setValue] = useState(entry.text)
+  const editRef = useRef(null)
 
   function commit() {
     const trimmed = value.trim()
@@ -20,22 +23,30 @@ function JournalItem({ entry, onEdit, onDelete }) {
       <div className="mt-2 w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
       <div className="flex-1 min-w-0">
         {editing ? (
-          <textarea
-            autoFocus
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            onBlur={commit}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault()
-                commit()
-              }
-            }}
-            rows={2}
-            className="w-full text-[13px] font-semibold text-textPrimary outline-none bg-transparent border-b-2 border-accent resize-none"
-          />
+          <div>
+            <MarkdownToolbar textareaRef={editRef} value={value} setValue={setValue} />
+            <textarea
+              ref={editRef}
+              autoFocus
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                  e.preventDefault()
+                  commit()
+                }
+              }}
+              rows={4}
+              className="w-full text-[13px] font-semibold text-textPrimary outline-none bg-surface border-2 border-accent rounded-xl px-2.5 py-2 resize-none font-mono"
+            />
+            <div className="flex justify-end mt-1.5">
+              <Button size="sm" onClick={commit}>
+                {t('save')}
+              </Button>
+            </div>
+          </div>
         ) : (
-          <div className="text-[13px] font-semibold text-textPrimary whitespace-pre-wrap">{entry.text}</div>
+          <MarkdownContent text={entry.text} />
         )}
         <div className="text-[10px] font-bold text-textMuted mt-1">{format(new Date(entry.createdAt), 'HH:mm')}</div>
       </div>
@@ -60,6 +71,7 @@ function JournalItem({ entry, onEdit, onDelete }) {
 export default function JournalEntry({ entries, onAdd, onEdit, onDelete }) {
   const { t } = useTranslation()
   const [text, setText] = useState('')
+  const composeRef = useRef(null)
 
   function submit() {
     const trimmed = text.trim()
@@ -73,7 +85,10 @@ export default function JournalEntry({ entries, onAdd, onEdit, onDelete }) {
   return (
     <div className="rounded-3xl border-2 border-border bg-surface p-4">
       <div className="text-[11px] uppercase font-extrabold tracking-wide text-textMuted mb-2">{t('journalPrompt')}</div>
+
+      <MarkdownToolbar textareaRef={composeRef} value={text} setValue={setText} />
       <textarea
+        ref={composeRef}
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => {
@@ -82,9 +97,9 @@ export default function JournalEntry({ entries, onAdd, onEdit, onDelete }) {
             submit()
           }
         }}
-        rows={3}
+        rows={4}
         placeholder={t('journalPlaceholder')}
-        className="w-full text-[13px] font-semibold px-3 py-2 rounded-xl border-2 border-border outline-none resize-none focus:border-accent"
+        className="w-full text-[13px] font-semibold px-3 py-2 rounded-xl border-2 border-border outline-none resize-none focus:border-accent font-mono"
       />
       <div className="mt-2 flex justify-end">
         <Button size="sm" onClick={submit}>

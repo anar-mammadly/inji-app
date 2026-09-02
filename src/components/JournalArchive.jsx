@@ -1,12 +1,16 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { Pencil, X } from 'lucide-react'
 import { useTranslation } from '../i18n/LanguageContext'
+import Button from './ui/Button'
+import MarkdownToolbar from './MarkdownToolbar'
+import MarkdownContent from './MarkdownContent'
 
 function ArchiveItem({ entry, onEdit, onDelete }) {
   const { t } = useTranslation()
   const [editing, setEditing] = useState(false)
   const [value, setValue] = useState(entry.text)
+  const editRef = useRef(null)
 
   function commit() {
     const trimmed = value.trim()
@@ -19,22 +23,30 @@ function ArchiveItem({ entry, onEdit, onDelete }) {
       <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-purple shrink-0" />
       <div className="flex-1 min-w-0">
         {editing ? (
-          <textarea
-            autoFocus
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            onBlur={commit}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault()
-                commit()
-              }
-            }}
-            rows={2}
-            className="w-full text-[13px] font-semibold text-textPrimary outline-none bg-transparent border-b-2 border-accent resize-none"
-          />
+          <div>
+            <MarkdownToolbar textareaRef={editRef} value={value} setValue={setValue} />
+            <textarea
+              ref={editRef}
+              autoFocus
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                  e.preventDefault()
+                  commit()
+                }
+              }}
+              rows={4}
+              className="w-full text-[13px] font-semibold text-textPrimary outline-none bg-surfaceAlt border-2 border-accent rounded-xl px-2.5 py-2 resize-none font-mono"
+            />
+            <div className="flex justify-end mt-1.5">
+              <Button size="sm" onClick={commit}>
+                {t('save')}
+              </Button>
+            </div>
+          </div>
         ) : (
-          <div className="text-[13px] font-semibold text-textPrimary whitespace-pre-wrap">{entry.text}</div>
+          <MarkdownContent text={entry.text} />
         )}
       </div>
       {!editing && (
