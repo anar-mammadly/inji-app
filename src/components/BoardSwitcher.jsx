@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Plus, X } from 'lucide-react'
 import { useTranslation } from '../i18n/LanguageContext'
+import { getBoardName } from '../utils/boards'
 import AddBoardModal from './AddBoardModal'
 
 const BOARD_COLORS = ['#58CC02', '#1CB0F6', '#CE82FF', '#FF9600', '#FF4B4B']
@@ -31,7 +32,7 @@ export default function BoardSwitcher({ boards, activeBoardId, onSelect, onAddBo
                   : { background: '#fff', color: color, borderColor: `${color}55` }
               }
             >
-              {board.name}
+              {getBoardName(board, t)}
             </button>
             {!board.builtIn && (
               <button

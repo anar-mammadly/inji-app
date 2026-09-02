@@ -1,5 +1,6 @@
 import { useTranslation } from '../i18n/LanguageContext'
 import { CATEGORIES, CATEGORY_LABEL_KEYS, categoryStyles } from '../utils/categories'
+import { getBoardName } from '../utils/boards'
 import { colors } from '../utils/colors'
 import ConfirmButton from './ui/ConfirmButton'
 import ProgressBar from './ui/ProgressBar'
@@ -41,7 +42,7 @@ export default function StatsPage({ categoryCounts, completedTasks = [], onReset
                 return (
                   <div key={board.id}>
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[13px] font-bold text-textPrimary">{board.name}</span>
+                      <span className="text-[13px] font-bold text-textPrimary">{getBoardName(board, t)}</span>
                       <span className="text-[12px] font-bold text-textMuted">{count}</span>
                     </div>
                     <ProgressBar
