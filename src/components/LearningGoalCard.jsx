@@ -6,11 +6,11 @@ import { requestNotificationPermission } from '../hooks/useReminders'
 import ProgressBar from './ui/ProgressBar'
 
 const REMINDER_OPTIONS = [
-  { value: '', minutes: null },
-  { value: '60', minutes: 60 },
-  { value: '180', minutes: 180 },
-  { value: '360', minutes: 360 },
-  { value: '1440', minutes: 1440 },
+  { minutes: null },
+  { minutes: 60 },
+  { minutes: 180 },
+  { minutes: 360 },
+  { minutes: 1440 },
 ]
 
 export default function LearningGoalCard({ goal, onUpdateProgress, onSetReminder, onDelete }) {
@@ -22,8 +22,7 @@ export default function LearningGoalCard({ goal, onUpdateProgress, onSetReminder
     if (!Number.isNaN(n)) onUpdateProgress(n)
   }
 
-  async function handleReminderChange(e) {
-    const minutes = e.target.value ? Number(e.target.value) : null
+  async function handleReminderChange(minutes) {
     if (minutes) {
       const granted = await requestNotificationPermission()
       if (!granted) return
@@ -61,19 +60,25 @@ export default function LearningGoalCard({ goal, onUpdateProgress, onSetReminder
 
       <ProgressBar value={goal.currentProgress} max={goal.targetProgress} color="#CE82FF" showLabel />
 
-      <div className="mt-3 flex items-center gap-2">
-        <span className="text-[11px] font-bold text-textMuted">{t('reminderEvery')}</span>
-        <select
-          value={goal.reminderIntervalMinutes || ''}
-          onChange={handleReminderChange}
-          className="text-[11px] font-bold px-2 py-1 rounded-xl border-2 border-border outline-none text-textSecondary"
-        >
-          {REMINDER_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.minutes ? t('reminderHours', { n: opt.minutes / 60 }) : t('reminderNone')}
-            </option>
-          ))}
-        </select>
+      <div className="mt-3">
+        <div className="text-[11px] font-bold text-textMuted mb-1.5">{t('reminderEvery')}</div>
+        <div className="flex flex-wrap gap-1.5">
+          {REMINDER_OPTIONS.map((opt) => {
+            const active = (goal.reminderIntervalMinutes || null) === opt.minutes
+            return (
+              <button
+                key={opt.minutes ?? 'off'}
+                type="button"
+                onClick={() => handleReminderChange(opt.minutes)}
+                className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border-2 transition-colors ${
+                  active ? 'bg-accentSoft text-accentDark border-accentSoft' : 'border-border text-textMuted'
+                }`}
+              >
+                {opt.minutes ? t('reminderHours', { n: opt.minutes / 60 }) : t('reminderNone')}
+              </button>
+            )
+          })}
+        </div>
       </div>
     </div>
   )
