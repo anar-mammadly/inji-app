@@ -86,7 +86,9 @@ export default function App() {
     deleteLearningGoal,
     setReminderInterval,
     markReminded,
-    upsertJournalEntry,
+    addJournalEntry,
+    editJournalEntry,
+    deleteJournalEntry,
   } = useLearningStore(state, setState)
 
   useReminders(learningGoals, markReminded)
@@ -216,7 +218,9 @@ export default function App() {
           onUpdateProgress={updateProgress}
           onSetReminder={setReminderInterval}
           onDeleteGoal={deleteLearningGoal}
-          onSaveJournal={upsertJournalEntry}
+          onAddJournalEntry={addJournalEntry}
+          onEditJournalEntry={editJournalEntry}
+          onDeleteJournalEntry={deleteJournalEntry}
         />
       ) : (
         <div className="flex flex-col flex-1">

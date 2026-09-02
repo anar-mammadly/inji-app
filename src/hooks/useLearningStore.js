@@ -57,24 +57,29 @@ export function useLearningStore(state, setState) {
     }))
   }
 
-  function upsertJournalEntry(dateISO, text) {
-    setState((s) => {
-      const entries = s.journalEntries || []
-      const existing = entries.find((e) => e.date === dateISO)
-      if (!text.trim()) {
-        return { ...s, journalEntries: entries.filter((e) => e.date !== dateISO) }
-      }
-      if (existing) {
-        return {
-          ...s,
-          journalEntries: entries.map((e) => (e.date === dateISO ? { ...e, text } : e)),
-        }
-      }
-      return {
-        ...s,
-        journalEntries: [...entries, { id: generateId(), date: dateISO, text, createdAt: new Date().toISOString() }],
-      }
-    })
+  function addJournalEntry(dateISO, text) {
+    const trimmed = text.trim()
+    if (!trimmed) return
+    setState((s) => ({
+      ...s,
+      journalEntries: [
+        ...(s.journalEntries || []),
+        { id: generateId(), date: dateISO, text: trimmed, createdAt: new Date().toISOString() },
+      ],
+    }))
+  }
+
+  function editJournalEntry(id, text) {
+    const trimmed = text.trim()
+    if (!trimmed) return
+    setState((s) => ({
+      ...s,
+      journalEntries: (s.journalEntries || []).map((e) => (e.id === id ? { ...e, text: trimmed } : e)),
+    }))
+  }
+
+  function deleteJournalEntry(id) {
+    setState((s) => ({ ...s, journalEntries: (s.journalEntries || []).filter((e) => e.id !== id) }))
   }
 
   return {
@@ -85,6 +90,8 @@ export function useLearningStore(state, setState) {
     deleteLearningGoal,
     setReminderInterval,
     markReminded,
-    upsertJournalEntry,
+    addJournalEntry,
+    editJournalEntry,
+    deleteJournalEntry,
   }
 }

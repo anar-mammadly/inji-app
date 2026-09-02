@@ -89,7 +89,9 @@ export default function LearningPage({
   onUpdateProgress,
   onSetReminder,
   onDeleteGoal,
-  onSaveJournal,
+  onAddJournalEntry,
+  onEditJournalEntry,
+  onDeleteJournalEntry,
 }) {
   const { t } = useTranslation()
   const [isJournal, setIsJournal] = useState(false)
@@ -97,7 +99,7 @@ export default function LearningPage({
   const [adding, setAdding] = useState(false)
 
   const todayKey = format(new Date(), 'yyyy-MM-dd')
-  const todayEntry = journalEntries.find((e) => e.date === todayKey)
+  const todayEntries = journalEntries.filter((e) => e.date === todayKey)
 
   return (
     <div className="flex-1 px-6 py-8 max-w-[640px] mx-auto w-full">
@@ -115,7 +117,12 @@ export default function LearningPage({
 
       {isJournal ? (
         <div className="flex flex-col gap-4">
-          <JournalEntry value={todayEntry?.text || ''} onSave={(text) => onSaveJournal(todayKey, text)} />
+          <JournalEntry
+            entries={todayEntries}
+            onAdd={(text) => onAddJournalEntry(todayKey, text)}
+            onEdit={onEditJournalEntry}
+            onDelete={onDeleteJournalEntry}
+          />
           <JournalArchive entries={journalEntries.filter((e) => e.date !== todayKey)} />
         </div>
       ) : (
