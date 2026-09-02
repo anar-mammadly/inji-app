@@ -66,7 +66,16 @@ export default function App() {
     cancelSession,
   } = usePomodoroStore(state, setState)
 
-  const { habits, habitLog, addHabit, deleteHabit, toggleHabitToday, toggleHabitDay } = useHabitStore(state, setState)
+  const {
+    habits,
+    habitLog,
+    addHabit,
+    deleteHabit,
+    toggleHabitToday,
+    toggleHabitDay,
+    addHabitOption,
+    deleteHabitOption,
+  } = useHabitStore(state, setState)
 
   const {
     learningGoals,
@@ -191,6 +200,8 @@ export default function App() {
           onDeleteHabit={deleteHabit}
           onToggleToday={toggleHabitToday}
           onToggleDay={toggleHabitDay}
+          onAddOption={addHabitOption}
+          onDeleteOption={deleteHabitOption}
         />
       ) : page === 'learning' ? (
         <LearningPage

@@ -1,27 +1,21 @@
 import { useState } from 'react'
-import { Flame, X, Check, PartyPopper } from 'lucide-react'
+import { Flame, X, Check, PartyPopper, Plus } from 'lucide-react'
 import { addDays, format } from 'date-fns'
 import { useTranslation } from '../i18n/LanguageContext'
 import HabitChainLinks from './HabitChainLinks'
 
-const SPORT_OPTIONS = ['running', 'gym', 'walk', 'yoga', 'other']
-const SPORT_LABEL_KEYS = {
-  running: 'sportRunning',
-  gym: 'sportGym',
-  walk: 'sportWalk',
-  yoga: 'sportYoga',
-  other: 'sportOther',
-}
-
-export default function HabitChainCard({ habit, log, onToggleToday, onToggleDay, onDelete }) {
+export default function HabitChainCard({ habit, log, onToggleToday, onToggleDay, onDelete, onAddOption, onDeleteOption }) {
   const { t } = useTranslation()
   const todayKey = format(new Date(), 'yyyy-MM-dd')
   const doneToday = !!log[todayKey]
   const [picking, setPicking] = useState(false)
   const [note, setNote] = useState('')
+  const [addingOption, setAddingOption] = useState(false)
+  const [newOption, setNewOption] = useState('')
 
   const targetDays = habit.targetDays || 30
   const startDate = habit.startDate || todayKey
+  const subOptions = habit.subOptions || []
   const filledCount = Array.from({ length: targetDays }, (_, i) => format(addDays(new Date(startDate), i), 'yyyy-MM-dd')).filter(
     (key) => !!log[key],
   ).length
@@ -32,24 +26,32 @@ export default function HabitChainCard({ habit, log, onToggleToday, onToggleDay,
       onToggleToday()
       return
     }
-    if (habit.kind === 'sport') {
+    if (subOptions.length > 0) {
       setPicking(true)
       return
     }
     onToggleToday()
   }
 
-  function confirmSport(option) {
-    onToggleToday(t(SPORT_LABEL_KEYS[option]))
+  function confirmOption(option) {
+    onToggleToday(option)
     setPicking(false)
   }
 
-  function confirmSportFreeText() {
+  function confirmFreeText() {
     const trimmed = note.trim()
     if (!trimmed) return
     onToggleToday(trimmed)
     setPicking(false)
     setNote('')
+  }
+
+  function submitNewOption() {
+    const trimmed = newOption.trim()
+    if (!trimmed) return
+    onAddOption(trimmed)
+    setNewOption('')
+    setAddingOption(false)
   }
 
   const todayNote = doneToday && typeof log[todayKey] === 'string' ? log[todayKey] : null
@@ -85,22 +87,57 @@ export default function HabitChainCard({ habit, log, onToggleToday, onToggleDay,
       {picking && (
         <div className="mb-3 p-3 rounded-2xl bg-surfaceAlt flex flex-col gap-2">
           <div className="flex flex-wrap gap-1.5">
-            {SPORT_OPTIONS.map((opt) => (
-              <button
-                key={opt}
-                onClick={() => confirmSport(opt)}
-                className="px-3 py-1.5 rounded-xl text-[12px] font-bold border-2 border-border bg-surface text-textSecondary hover:bg-accentSoft hover:text-accentDark hover:border-accent transition-colors"
-              >
-                {t(SPORT_LABEL_KEYS[opt])}
-              </button>
+            {subOptions.map((opt) => (
+              <div key={opt} className="group relative">
+                <button
+                  onClick={() => confirmOption(opt)}
+                  className="px-3 py-1.5 pr-6 rounded-xl text-[12px] font-bold border-2 border-border bg-surface text-textSecondary hover:bg-accentSoft hover:text-accentDark hover:border-accent transition-colors"
+                >
+                  {opt}
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onDeleteOption(opt)
+                  }}
+                  aria-label={t('deleteOption')}
+                  className="absolute top-1/2 right-1.5 -translate-y-1/2 flex items-center justify-center rounded-full text-textMuted hover:text-coral hover:bg-bg transition-colors"
+                  style={{ width: 16, height: 16 }}
+                >
+                  <X size={10} strokeWidth={2.5} />
+                </button>
+              </div>
             ))}
+
+            {addingOption ? (
+              <div className="flex items-center gap-1">
+                <input
+                  autoFocus
+                  type="text"
+                  value={newOption}
+                  onChange={(e) => setNewOption(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && submitNewOption()}
+                  onBlur={() => !newOption.trim() && setAddingOption(false)}
+                  placeholder={t('newOptionPlaceholder')}
+                  className="w-28 px-2 py-1.5 text-[12px] font-semibold rounded-xl border-2 border-accent outline-none"
+                />
+              </div>
+            ) : (
+              <button
+                onClick={() => setAddingOption(true)}
+                className="px-2.5 py-1.5 rounded-xl text-[12px] font-bold border-2 border-dashed border-borderStrong text-textMuted hover:border-accent hover:text-accent transition-colors flex items-center gap-1"
+              >
+                <Plus size={12} strokeWidth={3} />
+                {t('addOption')}
+              </button>
+            )}
           </div>
           <div className="flex gap-1.5">
             <input
               type="text"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && confirmSportFreeText()}
+              onKeyDown={(e) => e.key === 'Enter' && confirmFreeText()}
               placeholder={t('sportFreeTextPlaceholder')}
               className="flex-1 px-2.5 py-1.5 text-[12px] font-semibold rounded-xl border-2 border-border outline-none"
             />

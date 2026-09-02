@@ -50,6 +50,28 @@ export function useHabitStore(state, setState) {
     toggleHabitDay(habitId, todayISO(), entry)
   }
 
+  function addHabitOption(habitId, label) {
+    const trimmed = label.trim()
+    if (!trimmed) return
+    setState((s) => ({
+      ...s,
+      habits: (s.habits || []).map((h) =>
+        h.id === habitId && !(h.subOptions || []).includes(trimmed)
+          ? { ...h, subOptions: [...(h.subOptions || []), trimmed] }
+          : h,
+      ),
+    }))
+  }
+
+  function deleteHabitOption(habitId, label) {
+    setState((s) => ({
+      ...s,
+      habits: (s.habits || []).map((h) =>
+        h.id === habitId ? { ...h, subOptions: (h.subOptions || []).filter((o) => o !== label) } : h,
+      ),
+    }))
+  }
+
   return {
     habits,
     habitLog,
@@ -57,5 +79,7 @@ export function useHabitStore(state, setState) {
     deleteHabit,
     toggleHabitDay,
     toggleHabitToday,
+    addHabitOption,
+    deleteHabitOption,
   }
 }

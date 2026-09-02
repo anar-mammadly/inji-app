@@ -7,7 +7,16 @@ import Button from './ui/Button'
 const PRESET_DAYS = [10, 30, 100]
 const HABIT_COLORS = ['#FF4B4B', '#1CB0F6', '#CE82FF', '#FF9600', '#58CC02']
 
-export default function HabitsPage({ habits, habitLog, onAddHabit, onDeleteHabit, onToggleToday, onToggleDay }) {
+export default function HabitsPage({
+  habits,
+  habitLog,
+  onAddHabit,
+  onDeleteHabit,
+  onToggleToday,
+  onToggleDay,
+  onAddOption,
+  onDeleteOption,
+}) {
   const { t } = useTranslation()
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
@@ -97,6 +106,8 @@ export default function HabitsPage({ habits, habitLog, onAddHabit, onDeleteHabit
             onToggleToday={(note) => onToggleToday(habit.id, note)}
             onToggleDay={(dateISO) => onToggleDay(habit.id, dateISO)}
             onDelete={() => onDeleteHabit(habit.id)}
+            onAddOption={(label) => onAddOption(habit.id, label)}
+            onDeleteOption={(label) => onDeleteOption(habit.id, label)}
           />
         ))}
       </div>

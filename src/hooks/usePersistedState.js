@@ -11,8 +11,19 @@ const DEFAULT_BOARDS = [
   { id: 'personal', name: 'Personal', builtIn: true, createdAt: new Date().toISOString() },
 ]
 
+const DEFAULT_SPORT_OPTIONS = ['Qaçış', 'İdman zalı', 'Gəzinti', 'Yoqa', 'Digər']
+
 const DEFAULT_HABITS = [
-  { id: 'sport', name: 'Sport', kind: 'sport', color: null, targetDays: 30, startDate: todayISO(), createdAt: new Date().toISOString() },
+  {
+    id: 'sport',
+    name: 'Sport',
+    kind: 'sport',
+    color: null,
+    targetDays: 30,
+    startDate: todayISO(),
+    subOptions: DEFAULT_SPORT_OPTIONS,
+    createdAt: new Date().toISOString(),
+  },
 ]
 
 function defaultState() {
@@ -41,7 +52,12 @@ function ensureSportHabit(habits) {
   const list = habits || []
   const hasSport = list.some((h) => h.kind === 'sport')
   const withSport = hasSport ? list : [...list, DEFAULT_HABITS[0]]
-  return withSport.map((h) => (h.targetDays ? h : { ...h, targetDays: 30, startDate: h.startDate || todayISO() }))
+  return withSport.map((h) => ({
+    ...h,
+    targetDays: h.targetDays || 30,
+    startDate: h.startDate || todayISO(),
+    subOptions: h.subOptions || (h.kind === 'sport' ? DEFAULT_SPORT_OPTIONS : []),
+  }))
 }
 
 function loadInitialState(storageKey) {
