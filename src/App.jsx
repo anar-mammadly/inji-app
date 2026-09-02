@@ -143,15 +143,18 @@ export default function App() {
     const beadId = `${task.id}-${Date.now()}`
     const startX = cardRect.left + cardRect.width / 2 - 8
     const startY = cardRect.top + cardRect.height / 2 - 8
-    const endX = jarRect.left + jarRect.width / 2 - 8
-    const endY = jarRect.top + jarRect.height / 2 - 8
+    // fly to a point above the jar's opening first, then drop straight down
+    // into it — reads as "the bead falls into the jar" rather than a flat glide
+    const aboveX = jarRect.left + jarRect.width / 2 - 8
+    const aboveY = jarRect.top + jarRect.height * 0.05 - 8
+    const landY = jarRect.top + jarRect.height * 0.32 - 8
 
     setFlyingBeads((beads) => [
       ...beads,
-      { id: beadId, startX, startY, endX, endY, color: beadColors[beadCount % beadColors.length] },
+      { id: beadId, startX, startY, aboveX, aboveY, landY, color: beadColors[beadCount % beadColors.length] },
     ])
 
-    scheduleDropSound(0.6)
+    scheduleDropSound(0.5)
     completeTask(task.id)
   }
 
@@ -270,9 +273,18 @@ export default function App() {
         {flyingBeads.map((bead) => (
           <motion.div
             key={bead.id}
-            initial={{ x: bead.startX, y: bead.startY, opacity: 1 }}
-            animate={{ x: bead.endX, y: bead.endY, opacity: 0 }}
-            transition={{ duration: 0.6, ease: 'easeInOut' }}
+            initial={{ x: bead.startX, y: bead.startY, scale: 1, opacity: 1 }}
+            animate={{
+              x: [bead.startX, bead.aboveX, bead.aboveX, bead.aboveX, bead.aboveX],
+              y: [bead.startY, bead.aboveY, bead.landY + 6, bead.landY - 3, bead.landY],
+              scale: [1, 1.05, 1, 1.25, 0.6],
+              opacity: [1, 1, 1, 1, 0],
+            }}
+            transition={{
+              duration: 0.75,
+              times: [0, 0.45, 0.7, 0.85, 1],
+              ease: ['easeOut', 'easeIn', 'backOut', 'easeIn'],
+            }}
             onAnimationComplete={() => handleFlightComplete(bead.id)}
             style={{
               position: 'fixed', top: 0, left: 0,
