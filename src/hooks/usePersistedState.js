@@ -45,6 +45,7 @@ function defaultState() {
     habitLog: {},
     learningGoals: [],
     journalEntries: [],
+    events: [],
   }
 }
 

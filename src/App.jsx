@@ -9,6 +9,7 @@ import BoardSwitcher from './components/BoardSwitcher'
 import StatsPage from './components/StatsPage'
 import HabitsPage from './components/HabitsPage'
 import LearningPage from './components/LearningPage'
+import CalendarPage from './components/CalendarPage'
 import ProfilePage from './components/ProfilePage'
 import AuthModal from './components/AuthModal'
 import PullToRefreshIndicator from './components/PullToRefreshIndicator'
@@ -18,6 +19,7 @@ import { useTaskStore } from './hooks/useTaskStore'
 import { usePomodoroStore, durationFor } from './hooks/usePomodoroStore'
 import { useHabitStore } from './hooks/useHabitStore'
 import { useLearningStore } from './hooks/useLearningStore'
+import { useCalendarStore } from './hooks/useCalendarStore'
 import { useReminders } from './hooks/useReminders'
 import { useProfile } from './hooks/useProfile'
 import { useAuth } from './contexts/AuthContext'
@@ -92,6 +94,8 @@ export default function App() {
   } = useLearningStore(state, setState)
 
   useReminders(learningGoals, markReminded)
+
+  const { events, addEvent, editEvent, deleteEvent, toggleEventDone } = useCalendarStore(state, setState)
 
   const { profile } = useProfile(userId)
 
@@ -221,6 +225,14 @@ export default function App() {
           onAddJournalEntry={addJournalEntry}
           onEditJournalEntry={editJournalEntry}
           onDeleteJournalEntry={deleteJournalEntry}
+        />
+      ) : page === 'calendar' ? (
+        <CalendarPage
+          events={events}
+          onAddEvent={addEvent}
+          onEditEvent={editEvent}
+          onDeleteEvent={deleteEvent}
+          onToggleEventDone={toggleEventDone}
         />
       ) : (
         <div className="flex flex-col flex-1">
