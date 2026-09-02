@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Flame, X, Check, PartyPopper, Plus } from 'lucide-react'
+import { Flame, X, PartyPopper, Plus } from 'lucide-react'
 import { addDays, format } from 'date-fns'
 import { useTranslation } from '../i18n/LanguageContext'
 import HabitChainLinks from './HabitChainLinks'
@@ -21,16 +21,20 @@ export default function HabitChainCard({ habit, log, onToggleToday, onToggleDay,
   ).length
   const isComplete = filledCount >= targetDays
 
-  function handlePrimaryToggle() {
-    if (doneToday) {
+  function handleChainToggle(dateISO) {
+    if (dateISO === todayKey) {
+      if (doneToday) {
+        onToggleToday()
+        return
+      }
+      if (subOptions.length > 0) {
+        setPicking(true)
+        return
+      }
       onToggleToday()
       return
     }
-    if (subOptions.length > 0) {
-      setPicking(true)
-      return
-    }
-    onToggleToday()
+    onToggleDay(dateISO)
   }
 
   function confirmOption(option) {
@@ -67,21 +71,9 @@ export default function HabitChainCard({ habit, log, onToggleToday, onToggleDay,
             {isComplete ? t('challengeComplete') : t('challengeProgress', { done: filledCount, total: targetDays })}
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={handlePrimaryToggle}
-            className={`flex items-center justify-center rounded-full border-[2.5px] transition-all hover:scale-110 ${
-              doneToday ? 'border-accent bg-accent' : 'border-borderStrong hover:border-accent'
-            }`}
-            style={{ width: 26, height: 26 }}
-            aria-label={t('markToday')}
-          >
-            {doneToday && <Check size={15} strokeWidth={3} className="text-white" />}
-          </button>
-          <button onClick={onDelete} className="text-textMuted hover:text-coral transition-colors" aria-label={t('deleteHabit')}>
-            <X size={15} strokeWidth={2.5} />
-          </button>
-        </div>
+        <button onClick={onDelete} className="text-textMuted hover:text-coral transition-colors shrink-0" aria-label={t('deleteHabit')}>
+          <X size={15} strokeWidth={2.5} />
+        </button>
       </div>
 
       {picking && (
@@ -159,7 +151,7 @@ export default function HabitChainCard({ habit, log, onToggleToday, onToggleDay,
         targetDays={targetDays}
         log={log}
         color={habit.color || '#FF4B4B'}
-        onToggleDay={onToggleDay}
+        onToggleDay={handleChainToggle}
       />
     </div>
   )
