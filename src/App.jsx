@@ -70,6 +70,7 @@ export default function App() {
     habits,
     habitLog,
     addHabit,
+    editHabit,
     deleteHabit,
     toggleHabitToday,
     toggleHabitDay,
@@ -197,6 +198,7 @@ export default function App() {
           habits={habits}
           habitLog={habitLog}
           onAddHabit={addHabit}
+          onEditHabit={editHabit}
           onDeleteHabit={deleteHabit}
           onToggleToday={toggleHabitToday}
           onToggleDay={toggleHabitDay}

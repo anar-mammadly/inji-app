@@ -26,6 +26,15 @@ export function useHabitStore(state, setState) {
     return habit.id
   }
 
+  function editHabit(id, name) {
+    const trimmed = name.trim()
+    if (!trimmed) return
+    setState((s) => ({
+      ...s,
+      habits: (s.habits || []).map((h) => (h.id === id ? { ...h, name: trimmed } : h)),
+    }))
+  }
+
   function deleteHabit(id) {
     setState((s) => {
       const nextLog = { ...(s.habitLog || {}) }
@@ -77,6 +86,7 @@ export function useHabitStore(state, setState) {
     habits,
     habitLog,
     addHabit,
+    editHabit,
     deleteHabit,
     toggleHabitDay,
     toggleHabitToday,

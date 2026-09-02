@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { Flame, X, PartyPopper, Plus } from 'lucide-react'
+import { Flame, X, PartyPopper, Plus, Pencil } from 'lucide-react'
 import { addDays, format } from 'date-fns'
 import { useTranslation } from '../i18n/LanguageContext'
 import HabitChainLinks from './HabitChainLinks'
 
-export default function HabitChainCard({ habit, log, onToggleToday, onToggleDay, onDelete, onAddOption, onDeleteOption }) {
+export default function HabitChainCard({ habit, log, onToggleToday, onToggleDay, onDelete, onEdit, onAddOption, onDeleteOption }) {
   const { t } = useTranslation()
   const todayKey = format(new Date(), 'yyyy-MM-dd')
   const doneToday = !!log[todayKey]
@@ -12,6 +12,8 @@ export default function HabitChainCard({ habit, log, onToggleToday, onToggleDay,
   const [note, setNote] = useState('')
   const [addingOption, setAddingOption] = useState(false)
   const [newOption, setNewOption] = useState('')
+  const [editingName, setEditingName] = useState(false)
+  const [nameValue, setNameValue] = useState('')
 
   const targetDays = habit.targetDays || 30
   const startDate = habit.startDate || todayKey
@@ -59,13 +61,47 @@ export default function HabitChainCard({ habit, log, onToggleToday, onToggleDay,
   }
 
   const todayNote = doneToday && typeof log[todayKey] === 'string' ? log[todayKey] : null
-  const displayName = habit.kind === 'sport' ? t('habitSportName') : habit.name
+  const displayName = habit.kind === 'sport' && habit.name === 'Sport' ? t('habitSportName') : habit.name
+
+  function startEditingName() {
+    setNameValue(displayName)
+    setEditingName(true)
+  }
+
+  function commitName() {
+    const trimmed = nameValue.trim()
+    if (trimmed) onEdit(trimmed)
+    setEditingName(false)
+  }
 
   return (
     <div className="rounded-3xl border-2 border-border bg-surface p-4">
       <div className="flex items-start justify-between gap-2 mb-3">
-        <div>
-          <div className="text-[15px] font-extrabold text-textPrimary">{displayName}</div>
+        <div className="flex-1 min-w-0">
+          {editingName ? (
+            <input
+              autoFocus
+              value={nameValue}
+              onChange={(e) => setNameValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') commitName()
+                else if (e.key === 'Escape') setEditingName(false)
+              }}
+              onBlur={commitName}
+              className="text-[15px] font-extrabold text-textPrimary outline-none bg-transparent border-b-2 border-accent w-full"
+            />
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <div className="text-[15px] font-extrabold text-textPrimary truncate">{displayName}</div>
+              <button
+                onClick={startEditingName}
+                className="shrink-0 text-textMuted hover:text-textSecondary transition-colors"
+                aria-label={t('editHabit')}
+              >
+                <Pencil size={12} strokeWidth={2.5} />
+              </button>
+            </div>
+          )}
           <div className="flex items-center gap-1 text-[12px] font-bold mt-0.5" style={{ color: isComplete ? '#58CC02' : '#FF9600' }}>
             {isComplete ? <PartyPopper size={13} /> : <Flame size={13} fill="#FF9600" />}
             {isComplete ? t('challengeComplete') : t('challengeProgress', { done: filledCount, total: targetDays })}

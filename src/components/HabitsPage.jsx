@@ -11,6 +11,7 @@ export default function HabitsPage({
   habits,
   habitLog,
   onAddHabit,
+  onEditHabit,
   onDeleteHabit,
   onToggleToday,
   onToggleDay,
@@ -162,6 +163,7 @@ export default function HabitsPage({
             onToggleToday={(note) => onToggleToday(habit.id, note)}
             onToggleDay={(dateISO) => onToggleDay(habit.id, dateISO)}
             onDelete={() => onDeleteHabit(habit.id)}
+            onEdit={(name) => onEditHabit(habit.id, name)}
             onAddOption={(label) => onAddOption(habit.id, label)}
             onDeleteOption={(label) => onDeleteOption(habit.id, label)}
           />
