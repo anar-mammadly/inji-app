@@ -16,6 +16,7 @@ import { ChevronLeft, ChevronRight, Check, Pencil, X, Clock } from 'lucide-react
 import { useTranslation } from '../i18n/LanguageContext'
 import Modal from './ui/Modal'
 import Button from './ui/Button'
+import TimeInput24 from './TimeInput24'
 
 const WEEKDAY_LABELS_AZ = ['B.E', 'Ç.A', 'Ç', 'C.A', 'C', 'Ş', 'B']
 const WEEKDAY_LABELS_EN = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU']
@@ -37,11 +38,10 @@ function EventItem({ event, onToggleDone, onEdit, onDelete }) {
     return (
       <div className="p-3 rounded-xl border-2 border-accent bg-surfaceAlt flex flex-col gap-2">
         <div className="flex gap-2">
-          <input
-            type="time"
+          <TimeInput24
             value={time}
-            onChange={(e) => setTime(e.target.value)}
-            className="px-2 py-1.5 text-[12px] font-bold rounded-lg border-2 border-border outline-none"
+            onChange={setTime}
+            className="w-16 px-2 py-1.5 text-[12px] font-bold rounded-lg border-2 border-border outline-none text-center"
           />
           <input
             autoFocus
@@ -122,11 +122,10 @@ function DayDetailModal({ open, onClose, dateKey, events, lang, onAdd, onToggleD
   return (
     <Modal open={open} onClose={onClose} title={dateLabel}>
       <div className="flex gap-2 mb-3">
-        <input
-          type="time"
+        <TimeInput24
           value={time}
-          onChange={(e) => setTime(e.target.value)}
-          className="w-24 px-2 py-2 text-[13px] font-bold rounded-xl border-2 border-border outline-none"
+          onChange={setTime}
+          className="w-20 px-2 py-2 text-[13px] font-bold rounded-xl border-2 border-border outline-none text-center"
         />
         <input
           type="text"
