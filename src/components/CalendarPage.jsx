@@ -38,11 +38,7 @@ function EventItem({ event, onToggleDone, onEdit, onDelete }) {
     return (
       <div className="p-3 rounded-xl border-2 border-accent bg-surfaceAlt flex flex-col gap-2">
         <div className="flex gap-2">
-          <TimeInput24
-            value={time}
-            onChange={setTime}
-            className="w-16 px-2 py-1.5 text-[12px] font-bold rounded-lg border-2 border-border outline-none text-center"
-          />
+          <TimeInput24 value={time} onChange={setTime} size="sm" />
           <input
             autoFocus
             type="text"
@@ -122,11 +118,7 @@ function DayDetailModal({ open, onClose, dateKey, events, lang, onAdd, onToggleD
   return (
     <Modal open={open} onClose={onClose} title={dateLabel}>
       <div className="flex gap-2 mb-3">
-        <TimeInput24
-          value={time}
-          onChange={setTime}
-          className="w-20 px-2 py-2 text-[13px] font-bold rounded-xl border-2 border-border outline-none text-center"
-        />
+        <TimeInput24 value={time} onChange={setTime} size="md" />
         <input
           type="text"
           value={title}
