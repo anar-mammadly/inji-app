@@ -1,25 +1,32 @@
+// JS-side mirror of tailwind.config.js theme colors — used only where Tailwind
+// classes can't reach (SVG fill/stroke attributes, framer-motion animate props,
+// runtime-computed values like darken()). Components should prefer Tailwind
+// utility classes (bg-accent, text-textMuted, ...) over importing this object.
 export const colors = {
-  bg: '#F9F7F4',
+  bg: '#F7F9FB',
   surface: '#FFFFFF',
-  border: '#E5E3DE',
-  borderStrong: '#C5C2BC',
-  textPrimary: '#2C2C2A',
-  textSecondary: '#5F5E5A',
-  textMuted: '#888780',
-  accent: '#1D9E75',
-  coral: '#D85A30',
-  amber: '#EF9F27',
-  purple: '#7F77DD',
-  pink: '#D4537E',
+  surfaceAlt: '#F1F4F9',
+  border: '#E5E7EB',
+  borderStrong: '#D1D5DB',
+  textPrimary: '#3C3C3C',
+  textSecondary: '#6B7280',
+  textMuted: '#AFAFAF',
+  accent: '#58CC02',
+  accentDark: '#46A302',
+  accentSoft: '#DFFAB8',
+  blue: '#1CB0F6',
+  blueDark: '#0E8FCE',
+  purple: '#CE82FF',
+  purpleDark: '#A855F7',
+  orange: '#FF9600',
+  orangeDark: '#E07C00',
+  coral: '#FF4B4B',
+  coralDark: '#EA2B2B',
+  yellow: '#FFC800',
+  yellowDark: '#E0A800',
 }
 
-export const beadColors = ['#D85A30', '#1D9E75', '#EF9F27', '#7F77DD', '#D4537E']
-
-export const categoryStyles = {
-  study: { bg: '#EDE9FC', text: '#534AB7' },
-  work: { bg: '#E1F5EE', text: '#0F6E56' },
-  personal: { bg: '#FAECE7', text: '#993C1D' },
-}
+export const beadColors = ['#58CC02', '#1CB0F6', '#FF9600', '#CE82FF', '#FF4B4B', '#FFC800']
 
 export function darken(hex, amount) {
   const num = parseInt(hex.slice(1), 16)

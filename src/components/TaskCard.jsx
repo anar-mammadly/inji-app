@@ -1,69 +1,56 @@
-import { forwardRef, useState } from 'react'
-import { colors, categoryStyles } from '../utils/colors'
+import { forwardRef } from 'react'
+import { useDraggable } from '@dnd-kit/core'
+import { CSS } from '@dnd-kit/utilities'
+import { Check, X } from 'lucide-react'
 import { useTranslation } from '../i18n/LanguageContext'
+import { CATEGORY_LABEL_KEYS, categoryStyles } from '../utils/categories'
 
-const CATEGORY_LABEL_KEYS = {
-  study: 'categoryStudy',
-  work: 'categoryWork',
-  personal: 'categoryPersonal',
+function mergeRefs(refs) {
+  return (node) => {
+    refs.forEach((ref) => {
+      if (!ref) return
+      if (typeof ref === 'function') ref(node)
+      else ref.current = node
+    })
+  }
 }
 
-const TaskCard = forwardRef(function TaskCard({ task, onStart, onBack, onComplete, onDelete }, ref) {
+const TaskCard = forwardRef(function TaskCard({ task, onStart, onBack, onComplete, onDelete }, forwardedRef) {
   const { t } = useTranslation()
   const isDone = task.col === 'done'
   const cat = categoryStyles[task.category]
-  const [dragging, setDragging] = useState(false)
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: task.id })
 
-  function handleDragStart(e) {
-    e.dataTransfer.setData('text/plain', task.id)
-    e.dataTransfer.effectAllowed = 'move'
-    setDragging(true)
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging ? 0.4 : isDone ? 0.75 : 1,
+    zIndex: isDragging ? 10 : 'auto',
   }
 
   return (
     <div
-      ref={ref}
-      draggable
-      onDragStart={handleDragStart}
-      onDragEnd={() => setDragging(false)}
-      className="p-2.5 rounded-[10px] border transition-colors hover:border-borderStrong cursor-grab active:cursor-grabbing"
-      style={{
-        borderColor: colors.border,
-        background: colors.surface,
-        opacity: dragging ? 0.4 : isDone ? 0.75 : 1,
-      }}
+      ref={mergeRefs([forwardedRef, setNodeRef])}
+      style={style}
+      className="p-3 rounded-2xl border-2 border-border bg-surface transition-colors hover:border-borderStrong touch-none"
     >
-      <div className="flex items-start gap-2">
+      <div className="flex items-start gap-2.5">
         <button
           onClick={() => !isDone && onComplete(task)}
           disabled={isDone}
-          className="mt-0.5 flex items-center justify-center rounded-full border-2 shrink-0 transition-colors hover:border-accent"
-          style={{
-            width: 18,
-            height: 18,
-            borderColor: isDone ? colors.accent : colors.borderStrong,
-            background: isDone ? colors.accent : 'transparent',
-          }}
+          className={`mt-0.5 flex items-center justify-center rounded-full border-[2.5px] shrink-0 transition-all hover:border-accent hover:scale-110 ${
+            isDone ? 'border-accent bg-accent' : 'border-borderStrong'
+          }`}
+          style={{ width: 22, height: 22 }}
         >
-          {isDone && (
-            <svg width="10" height="10" viewBox="0 0 10 10">
-              <path d="M1 5 L4 8 L9 1.5" stroke="#fff" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          )}
+          {isDone && <Check size={13} strokeWidth={3} className="text-white" />}
         </button>
 
-        <div className="flex-1">
-          <div
-            className="text-[13px]"
-            style={{
-              color: isDone ? colors.textMuted : colors.textPrimary,
-              textDecoration: isDone ? 'line-through' : 'none',
-            }}
-          >
+        <div {...listeners} {...attributes} className="flex-1 cursor-grab active:cursor-grabbing">
+          <div className={`text-[14px] font-semibold ${isDone ? 'text-textMuted line-through' : 'text-textPrimary'}`}>
             {task.name}
           </div>
           <span
-            className="inline-block mt-1.5 px-2 py-0.5 rounded-[8px] text-[11px]"
+            className="inline-block mt-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold"
             style={{ background: cat.bg, color: cat.text }}
           >
             {t(CATEGORY_LABEL_KEYS[task.category])}
@@ -72,28 +59,16 @@ const TaskCard = forwardRef(function TaskCard({ task, onStart, onBack, onComplet
           {!isDone && (
             <div className="flex gap-3 mt-2">
               {task.col === 'todo' && (
-                <button
-                  onClick={() => onStart(task.id)}
-                  className="text-[12px]"
-                  style={{ color: colors.textSecondary }}
-                >
+                <button onClick={() => onStart(task.id)} className="text-[12px] font-bold text-textSecondary">
                   {t('start')}
                 </button>
               )}
               {task.col === 'inprog' && (
                 <>
-                  <button
-                    onClick={() => onBack(task.id)}
-                    className="text-[12px]"
-                    style={{ color: colors.textSecondary }}
-                  >
+                  <button onClick={() => onBack(task.id)} className="text-[12px] font-bold text-textSecondary">
                     {t('back')}
                   </button>
-                  <button
-                    onClick={() => onComplete(task)}
-                    className="text-[12px]"
-                    style={{ color: colors.accent }}
-                  >
+                  <button onClick={() => onComplete(task)} className="text-[12px] font-bold text-accent">
                     {t('doneAction')}
                   </button>
                 </>
@@ -104,18 +79,11 @@ const TaskCard = forwardRef(function TaskCard({ task, onStart, onBack, onComplet
 
         <button
           onClick={() => onDelete(task.id)}
-          className="shrink-0 -mt-0.5 -mr-0.5 flex items-center justify-center rounded-[6px] transition-colors hover:bg-bg"
-          style={{ width: 20, height: 20, color: colors.textMuted }}
+          className="shrink-0 -mt-0.5 -mr-0.5 flex items-center justify-center rounded-lg text-textMuted transition-colors hover:bg-bg hover:text-coral"
+          style={{ width: 22, height: 22 }}
           aria-label="Delete task"
         >
-          <svg width="11" height="11" viewBox="0 0 11 11">
-            <path
-              d="M1 1 L10 10 M10 1 L1 10"
-              stroke="currentColor"
-              strokeWidth="1.4"
-              strokeLinecap="round"
-            />
-          </svg>
+          <X size={13} strokeWidth={2.5} />
         </button>
       </div>
     </div>

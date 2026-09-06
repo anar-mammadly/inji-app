@@ -1,18 +1,27 @@
 import { useRef, useState } from 'react'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import Navbar from './components/Navbar'
-import Jar from './components/Jar'
-import Stats from './components/Stats'
-import PomodoroTimer from './components/PomodoroTimer'
-import KanbanBoard from './components/KanbanBoard'
 import StatsPage from './components/StatsPage'
+import BoardPage from './components/BoardPage'
+import HabitsPage from './components/HabitsPage'
+import LearningPage from './components/LearningPage'
+import CalendarPage from './components/CalendarPage'
+import { usePersistedState } from './hooks/usePersistedState'
 import { useTaskStore } from './hooks/useTaskStore'
-import { beadColors, colors } from './utils/colors'
-import { scheduleDropSound } from './utils/sound'
+import { usePomodoroStore, durationFor } from './hooks/usePomodoroStore'
+import { useHabitStore } from './hooks/useHabitStore'
+import { useLearningStore } from './hooks/useLearningStore'
+import { useCalendarStore } from './hooks/useCalendarStore'
+import { useReminders } from './hooks/useReminders'
+import { beadColors } from './utils/colors'
+import { scheduleDropSound, playBeadBreakSound } from './utils/sound'
 
 export default function App() {
+  const [state, setState] = usePersistedState()
   const {
     tasks,
+    boards,
     beadCount,
     weeklyCount,
     streakDays,
@@ -28,11 +37,70 @@ export default function App() {
     resetStats,
     setDailyGoal,
     setWeeklyGoal,
-  } = useTaskStore()
+    resetWeeklyGoal,
+    addBoard,
+    deleteBoard,
+  } = useTaskStore(state, setState)
+
+  const {
+    activeSession,
+    computeSecondsLeft,
+    startSession,
+    toggleRunning,
+    advanceToNextMode,
+    resetSession,
+    cancelSession,
+  } = usePomodoroStore(state, setState)
+
+  const {
+    habits,
+    habitLog,
+    addHabit,
+    editHabit,
+    deleteHabit,
+    toggleHabitToday,
+    toggleHabitDay,
+    addHabitOption,
+    deleteHabitOption,
+  } = useHabitStore(state, setState)
+
+  const {
+    learningGoals,
+    journalEntries,
+    addLearningGoal,
+    updateProgress,
+    deleteLearningGoal,
+    setReminderInterval,
+    markReminded,
+    addJournalEntry,
+    editJournalEntry,
+    deleteJournalEntry,
+  } = useLearningStore(state, setState)
+
+  useReminders(learningGoals, markReminded)
+
+  const { events, addEvent, editEvent, deleteEvent, toggleEventDone } = useCalendarStore(state, setState)
+
   const jarRef = useRef(null)
   const cardRefs = useRef({})
   const [flyingBeads, setFlyingBeads] = useState([])
-  const [page, setPage] = useState('board')
+  const [breakingBeads, setBreakingBeads] = useState([])
+
+  function handlePomodoroCancel() {
+    const session = activeSession
+    const hadProgress = session && session.mode === 'focus' && computeSecondsLeft(session) < durationFor('focus')
+    if (hadProgress && jarRef.current) {
+      const rect = jarRef.current.getBoundingClientRect()
+      const burstId = `break-${Date.now()}`
+      setBreakingBeads((beads) => [...beads, { id: burstId, x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }])
+      playBeadBreakSound()
+    }
+    cancelSession()
+  }
+
+  function handleBreakComplete(burstId) {
+    setBreakingBeads((beads) => beads.filter((b) => b.id !== burstId))
+  }
 
   function handleComplete(task) {
     const cardEl = cardRefs.current[task.id]
@@ -48,8 +116,11 @@ export default function App() {
     const beadId = `${task.id}-${Date.now()}`
     const startX = cardRect.left + cardRect.width / 2 - 8
     const startY = cardRect.top + cardRect.height / 2 - 8
-    const endX = jarRect.left + jarRect.width / 2 - 8
-    const endY = jarRect.top + jarRect.height / 2 - 8
+    // fly to a point above the jar's opening first, then drop straight down
+    // into it — reads as "the bead falls into the jar" rather than a flat glide
+    const aboveX = jarRect.left + jarRect.width / 2 - 8
+    const aboveY = jarRect.top + jarRect.height * 0.05 - 8
+    const landY = jarRect.top + jarRect.height * 0.32 - 8
 
     setFlyingBeads((beads) => [
       ...beads,
@@ -57,13 +128,14 @@ export default function App() {
         id: beadId,
         startX,
         startY,
-        endX,
-        endY,
+        aboveX,
+        aboveY,
+        landY,
         color: beadColors[beadCount % beadColors.length],
       },
     ])
 
-    scheduleDropSound(0.6)
+    scheduleDropSound(0.5)
     completeTask(task.id)
   }
 
@@ -83,51 +155,118 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: colors.bg }}>
-      <Navbar streakDays={streakDays} page={page} onNavigate={setPage} />
+    <div className="min-h-screen flex flex-col bg-bg">
+      <Navbar streakDays={streakDays} />
 
-      {page === 'stats' ? (
-        <StatsPage categoryCounts={categoryCounts} completedTasks={completedTasks} onResetStats={resetStats} />
-      ) : (
-        <div className="flex flex-col sm:flex-row flex-1">
-          <div
-            className="flex flex-col items-center pt-6 px-4 pb-4 sm:pb-0 border-b sm:border-b-0 sm:border-r w-full sm:w-[220px] shrink-0"
-            style={{ background: colors.bg, borderColor: colors.border }}
-          >
-            <Jar beadCount={beadCount} jarRef={jarRef} onReset={resetJar} />
-            <Stats
+      <Routes>
+        <Route path="/" element={<Navigate to={`/board/${boards[0]?.id}`} replace />} />
+        <Route
+          path="/board/:boardId"
+          element={
+            <BoardPage
+              boards={boards}
+              tasks={tasks}
               beadCount={beadCount}
               weeklyCount={weeklyCount}
               dailyGoal={dailyGoal}
               weeklyGoal={weeklyGoal}
               onSetDailyGoal={setDailyGoal}
               onSetWeeklyGoal={setWeeklyGoal}
+              onResetWeeklyGoal={resetWeeklyGoal}
+              onAddTask={addTask}
+              onDeleteTask={deleteTask}
+              onMoveTask={moveTask}
+              onComplete={handleComplete}
+              onDropTask={handleDropTask}
+              onAddBoard={addBoard}
+              onDeleteBoard={deleteBoard}
+              onResetJar={resetJar}
+              jarRef={jarRef}
+              cardRefs={cardRefs}
+              activeSession={activeSession}
+              computeSecondsLeft={computeSecondsLeft}
+              onPomodoroStart={startSession}
+              onPomodoroToggle={toggleRunning}
+              onPomodoroModeComplete={advanceToNextMode}
+              onPomodoroReset={resetSession}
+              onPomodoroCancel={handlePomodoroCancel}
             />
-            <div className="w-full mt-3">
-              <PomodoroTimer />
-            </div>
-          </div>
-
-          <KanbanBoard
-            tasks={tasks}
-            onStart={(id) => moveTask(id, 'inprog')}
-            onBack={(id) => moveTask(id, 'todo')}
-            onComplete={handleComplete}
-            onAdd={addTask}
-            onDelete={deleteTask}
-            onDropTask={handleDropTask}
-            cardRefs={cardRefs}
-          />
-        </div>
-      )}
+          }
+        />
+        <Route
+          path="/stats"
+          element={
+            <StatsPage
+              categoryCounts={categoryCounts}
+              completedTasks={completedTasks}
+              onResetStats={resetStats}
+              boards={boards}
+              tasks={tasks}
+            />
+          }
+        />
+        <Route
+          path="/habits"
+          element={
+            <HabitsPage
+              habits={habits}
+              habitLog={habitLog}
+              onAddHabit={addHabit}
+              onEditHabit={editHabit}
+              onDeleteHabit={deleteHabit}
+              onToggleToday={toggleHabitToday}
+              onToggleDay={toggleHabitDay}
+              onAddOption={addHabitOption}
+              onDeleteOption={deleteHabitOption}
+            />
+          }
+        />
+        <Route
+          path="/learning/*"
+          element={
+            <LearningPage
+              learningGoals={learningGoals}
+              journalEntries={journalEntries}
+              onAddGoal={addLearningGoal}
+              onUpdateProgress={updateProgress}
+              onSetReminder={setReminderInterval}
+              onDeleteGoal={deleteLearningGoal}
+              onAddJournalEntry={addJournalEntry}
+              onEditJournalEntry={editJournalEntry}
+              onDeleteJournalEntry={deleteJournalEntry}
+            />
+          }
+        />
+        <Route
+          path="/calendar"
+          element={
+            <CalendarPage
+              events={events}
+              onAddEvent={addEvent}
+              onEditEvent={editEvent}
+              onDeleteEvent={deleteEvent}
+              onToggleEventDone={toggleEventDone}
+            />
+          }
+        />
+      </Routes>
 
       <AnimatePresence>
         {flyingBeads.map((bead) => (
           <motion.div
             key={bead.id}
-            initial={{ x: bead.startX, y: bead.startY, opacity: 1 }}
-            animate={{ x: bead.endX, y: bead.endY, opacity: 0 }}
-            transition={{ duration: 0.6, ease: 'easeInOut' }}
+            initial={{ x: bead.startX, y: bead.startY, scale: 1, opacity: 1 }}
+            animate={{
+              x: [bead.startX, bead.aboveX, bead.aboveX, bead.aboveX, bead.aboveX],
+              y: [bead.startY, bead.aboveY, bead.landY + 6, bead.landY - 3, bead.landY],
+              scale: [1, 1.05, 1, 1.25, 0.6],
+              opacity: [1, 1, 1, 1, 0],
+            }}
+            transition={{
+              duration: 0.75,
+              times: [0, 0.45, 0.7, 0.85, 1],
+              ease: ['easeOut', 'easeIn', 'backOut', 'easeIn'],
+            }}
             onAnimationComplete={() => handleFlightComplete(bead.id)}
             style={{
               position: 'fixed',
@@ -141,6 +280,35 @@ export default function App() {
               zIndex: 50,
             }}
           />
+        ))}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {breakingBeads.map((burst) => (
+          <motion.div
+            key={burst.id}
+            style={{ position: 'fixed', top: burst.y, left: burst.x, width: 0, height: 0, pointerEvents: 'none', zIndex: 50 }}
+          >
+            {[0, 1, 2, 3, 4].map((i) => {
+              const angle = (i / 5) * Math.PI * 2
+              return (
+                <motion.div
+                  key={i}
+                  initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
+                  animate={{ x: Math.cos(angle) * 24, y: Math.sin(angle) * 24, opacity: 0, scale: 0.3 }}
+                  transition={{ duration: 0.5, ease: 'easeOut' }}
+                  onAnimationComplete={i === 0 ? () => handleBreakComplete(burst.id) : undefined}
+                  style={{
+                    position: 'absolute',
+                    width: 6,
+                    height: 6,
+                    borderRadius: '50%',
+                    background: '#FF4B4B',
+                  }}
+                />
+              )
+            })}
+          </motion.div>
         ))}
       </AnimatePresence>
     </div>

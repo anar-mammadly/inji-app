@@ -1,54 +1,14 @@
-import { useEffect, useState } from 'react'
-import { seedTasks } from '../utils/seed'
-import { applyDateRollover, todayISO } from './useStreak'
+import { generateId } from '../utils/id'
 
-const STORAGE_KEY = 'inji_state'
-const DEFAULT_DAILY_GOAL = 20
-const DEFAULT_WEEKLY_GOAL = 100
 const DEFAULT_CATEGORY_COUNTS = { study: 0, work: 0, personal: 0 }
 
-function loadInitialState() {
-  const raw = localStorage.getItem(STORAGE_KEY)
-  const base = raw
-    ? JSON.parse(raw)
-    : {
-        tasks: seedTasks,
-        beadCount: 0,
-        lastActiveDate: todayISO(),
-        streakDays: 0,
-        history: [],
-        dailyGoal: DEFAULT_DAILY_GOAL,
-        weeklyGoal: DEFAULT_WEEKLY_GOAL,
-        categoryCounts: DEFAULT_CATEGORY_COUNTS,
-        todayBeadCategories: [],
-        completedTasks: [],
-      }
-
-  const rolled = applyDateRollover(base)
-  return {
-    dailyGoal: DEFAULT_DAILY_GOAL,
-    weeklyGoal: DEFAULT_WEEKLY_GOAL,
-    history: [],
-    categoryCounts: DEFAULT_CATEGORY_COUNTS,
-    todayBeadCategories: [],
-    completedTasks: [],
-    ...base,
-    ...rolled,
-  }
-}
-
-export function useTaskStore() {
-  const [state, setState] = useState(loadInitialState)
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-  }, [state])
-
-  function addTask(name, category, col = 'todo') {
+export function useTaskStore(state, setState) {
+  function addTask(name, category, boardId, col = 'todo') {
     const task = {
-      id: String(Date.now()),
+      id: generateId(),
       name,
       category,
+      boardId,
       col,
       createdAt: new Date().toISOString(),
       completedAt: null,
@@ -81,7 +41,7 @@ export function useTaskStore() {
         completedTasks: task
           ? [
               ...s.completedTasks,
-              { id: task.id, name: task.name, category: task.category, completedAt: new Date().toISOString() },
+              { id: task.id, name: task.name, category: task.category, boardId: task.boardId, completedAt: new Date().toISOString() },
             ]
           : s.completedTasks,
       }
@@ -108,10 +68,36 @@ export function useTaskStore() {
     setState((s) => ({ ...s, weeklyGoal: Math.max(1, goal) }))
   }
 
+  function resetWeeklyGoal() {
+    setState((s) => ({ ...s, history: [], weeklyGoalResetAt: new Date().toISOString() }))
+  }
+
+  function addBoard(name) {
+    const trimmed = name.trim()
+    if (!trimmed) return
+    const board = { id: generateId(), name: trimmed, builtIn: false, createdAt: new Date().toISOString() }
+    setState((s) => ({ ...s, boards: [...s.boards, board] }))
+    return board.id
+  }
+
+  function deleteBoard(id) {
+    setState((s) => {
+      const board = s.boards.find((b) => b.id === id)
+      if (!board || board.builtIn) return s
+      const fallbackId = s.boards.find((b) => b.id !== id)?.id
+      return {
+        ...s,
+        boards: s.boards.filter((b) => b.id !== id),
+        tasks: s.tasks.map((t) => (t.boardId === id ? { ...t, boardId: fallbackId } : t)),
+      }
+    })
+  }
+
   const weeklyCount = state.beadCount + state.history.reduce((sum, h) => sum + h.count, 0)
 
   return {
     tasks: state.tasks,
+    boards: state.boards,
     beadCount: state.beadCount,
     weeklyCount,
     streakDays: state.streakDays,
@@ -128,5 +114,9 @@ export function useTaskStore() {
     resetStats,
     setDailyGoal,
     setWeeklyGoal,
+    resetWeeklyGoal,
+    weeklyGoalResetAt: state.weeklyGoalResetAt || null,
+    addBoard,
+    deleteBoard,
   }
 }
