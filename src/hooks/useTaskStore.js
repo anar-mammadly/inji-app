@@ -52,6 +52,15 @@ export function useTaskStore(state, setState) {
     setState((s) => ({ ...s, tasks: s.tasks.filter((t) => t.id !== id) }))
   }
 
+  function editTask(id, name) {
+    const trimmed = name.trim()
+    if (!trimmed) return
+    setState((s) => ({
+      ...s,
+      tasks: s.tasks.map((t) => (t.id === id ? { ...t, name: trimmed } : t)),
+    }))
+  }
+
   function resetJar() {
     setState((s) => ({ ...s, beadCount: 0, todayBeadCategories: [] }))
   }
@@ -110,12 +119,12 @@ export function useTaskStore(state, setState) {
     moveTask,
     completeTask,
     deleteTask,
+    editTask,
     resetJar,
     resetStats,
     setDailyGoal,
     setWeeklyGoal,
     resetWeeklyGoal,
-    weeklyGoalResetAt: state.weeklyGoalResetAt || null,
     addBoard,
     deleteBoard,
   }

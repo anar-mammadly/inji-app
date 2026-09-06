@@ -17,7 +17,7 @@ const COLUMN_COLORS = {
   done: { text: '#46A302', bg: '#DFFAB8' },
 }
 
-export default function Column({ colId, tasks, onStart, onBack, onComplete, onAdd, onDelete, cardRefs }) {
+export default function Column({ colId, tasks, onStart, onBack, onComplete, onAdd, onDelete, onEdit, cardRefs }) {
   const { t } = useTranslation()
   const [adding, setAdding] = useState(false)
   const canAdd = colId === 'todo' || colId === 'inprog'
@@ -68,6 +68,7 @@ export default function Column({ colId, tasks, onStart, onBack, onComplete, onAd
             onBack={onBack}
             onComplete={onComplete}
             onDelete={onDelete}
+            onEdit={onEdit}
           />
         ))}
       </div>

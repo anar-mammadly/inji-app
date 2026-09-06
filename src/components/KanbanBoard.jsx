@@ -3,7 +3,7 @@ import Column from './Column'
 
 const COLUMN_IDS = ['todo', 'inprog', 'done']
 
-export default function KanbanBoard({ tasks, onStart, onBack, onComplete, onAdd, onDelete, onDropTask, cardRefs }) {
+export default function KanbanBoard({ tasks, onStart, onBack, onComplete, onAdd, onDelete, onEdit, onDropTask, cardRefs }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
@@ -28,6 +28,7 @@ export default function KanbanBoard({ tasks, onStart, onBack, onComplete, onAdd,
             onComplete={onComplete}
             onAdd={onAdd}
             onDelete={onDelete}
+            onEdit={onEdit}
             cardRefs={cardRefs}
           />
         ))}

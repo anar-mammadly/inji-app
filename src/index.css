@@ -4,13 +4,49 @@
 
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
+html,
 body {
   margin: 0;
   font-family: 'Inter', sans-serif;
   font-size: 14px;
   line-height: 1.6;
-  color: #231f1a;
-  background: #faf8f4;
+  color: #2c2c2a;
+  background: #f9f7f4;
+  overscroll-behavior-y: none;
+  -webkit-text-size-adjust: 100%;
+}
+
+#root {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+button,
+a {
+  touch-action: manipulation;
+}
+
+/* Prevent iOS Safari from auto-zooming on input focus.
+   Must use !important — Tailwind utility classes have higher specificity
+   than element selectors and would otherwise override this. */
+input,
+select,
+textarea {
+  font-size: 16px !important;
+}
+
+@keyframes ptr-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@supports (padding: max(0px)) {
+  #root {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }

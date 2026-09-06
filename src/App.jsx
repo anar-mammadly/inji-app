@@ -1,12 +1,19 @@
-import { useRef, useState } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import Navbar from './components/Navbar'
+import Jar from './components/Jar'
+import Stats from './components/Stats'
+import PomodoroTimer from './components/PomodoroTimer'
+import KanbanBoard from './components/KanbanBoard'
+import BoardSwitcher from './components/BoardSwitcher'
 import StatsPage from './components/StatsPage'
-import BoardPage from './components/BoardPage'
 import HabitsPage from './components/HabitsPage'
 import LearningPage from './components/LearningPage'
 import CalendarPage from './components/CalendarPage'
+import ProfilePage from './components/ProfilePage'
+import AuthModal from './components/AuthModal'
+import PullToRefreshIndicator from './components/PullToRefreshIndicator'
+import { usePullToRefresh } from './hooks/usePullToRefresh'
 import { usePersistedState } from './hooks/usePersistedState'
 import { useTaskStore } from './hooks/useTaskStore'
 import { usePomodoroStore, durationFor } from './hooks/usePomodoroStore'
@@ -14,11 +21,19 @@ import { useHabitStore } from './hooks/useHabitStore'
 import { useLearningStore } from './hooks/useLearningStore'
 import { useCalendarStore } from './hooks/useCalendarStore'
 import { useReminders } from './hooks/useReminders'
+import { useProfile } from './hooks/useProfile'
+import { useAuth } from './contexts/AuthContext'
 import { beadColors } from './utils/colors'
 import { scheduleDropSound, playBeadBreakSound } from './utils/sound'
 
 export default function App() {
-  const [state, setState] = usePersistedState()
+  const { user, loading, signOut } = useAuth()
+  const [showAuth, setShowAuth] = useState(false)
+
+  const userId = user?.id ?? 'guest'
+
+  const [state, setState] = usePersistedState(userId)
+
   const {
     tasks,
     boards,
@@ -33,6 +48,7 @@ export default function App() {
     moveTask,
     completeTask,
     deleteTask,
+    editTask,
     resetJar,
     resetStats,
     setDailyGoal,
@@ -81,10 +97,27 @@ export default function App() {
 
   const { events, addEvent, editEvent, deleteEvent, toggleEventDone } = useCalendarStore(state, setState)
 
+  const { profile } = useProfile(userId)
+
+  const handleRefresh = useCallback(() => {
+    window.location.reload()
+  }, [])
+  const { pullY, refreshing } = usePullToRefresh(handleRefresh)
+
   const jarRef = useRef(null)
   const cardRefs = useRef({})
   const [flyingBeads, setFlyingBeads] = useState([])
   const [breakingBeads, setBreakingBeads] = useState([])
+  const [page, setPage] = useState('board')
+  const [activeBoardId, setActiveBoardId] = useState(boards[0]?.id)
+
+  useEffect(() => {
+    if (!boards.some((b) => b.id === activeBoardId)) {
+      setActiveBoardId(boards[0]?.id)
+    }
+  }, [boards, activeBoardId])
+
+  if (loading) return null
 
   function handlePomodoroCancel() {
     const session = activeSession
@@ -124,15 +157,7 @@ export default function App() {
 
     setFlyingBeads((beads) => [
       ...beads,
-      {
-        id: beadId,
-        startX,
-        startY,
-        aboveX,
-        aboveY,
-        landY,
-        color: beadColors[beadCount % beadColors.length],
-      },
+      { id: beadId, startX, startY, aboveX, aboveY, landY, color: beadColors[beadCount % beadColors.length] },
     ])
 
     scheduleDropSound(0.5)
@@ -146,110 +171,119 @@ export default function App() {
   function handleDropTask(taskId, targetCol) {
     const task = tasks.find((t) => t.id === taskId)
     if (!task || task.col === targetCol) return
-
-    if (targetCol === 'done') {
-      handleComplete(task)
-    } else {
-      moveTask(taskId, targetCol)
-    }
+    if (targetCol === 'done') handleComplete(task)
+    else moveTask(taskId, targetCol)
   }
 
-  return (
-    <div className="min-h-screen flex flex-col bg-bg">
-      <Navbar streakDays={streakDays} />
+  function handleDeleteBoard(id) {
+    if (id === activeBoardId) {
+      setActiveBoardId(boards.find((b) => b.id !== id)?.id)
+    }
+    deleteBoard(id)
+  }
 
-      <Routes>
-        <Route path="/" element={<Navigate to={`/board/${boards[0]?.id}`} replace />} />
-        <Route
-          path="/board/:boardId"
-          element={
-            <BoardPage
-              boards={boards}
-              tasks={tasks}
-              beadCount={beadCount}
-              weeklyCount={weeklyCount}
-              dailyGoal={dailyGoal}
-              weeklyGoal={weeklyGoal}
-              onSetDailyGoal={setDailyGoal}
-              onSetWeeklyGoal={setWeeklyGoal}
-              onResetWeeklyGoal={resetWeeklyGoal}
-              onAddTask={addTask}
-              onDeleteTask={deleteTask}
-              onMoveTask={moveTask}
+  const boardTasks = tasks.filter((t) => t.boardId === activeBoardId)
+
+  return (
+    <div className="min-h-dvh flex flex-col bg-bg">
+      <PullToRefreshIndicator pullY={pullY} refreshing={refreshing} />
+      <Navbar
+        streakDays={streakDays}
+        page={page}
+        onNavigate={setPage}
+        user={user}
+        onSignIn={() => setShowAuth(true)}
+        onSignOut={signOut}
+        profileName={`${profile.first_name} ${profile.last_name}`.trim()}
+        profileAvatar={profile.avatar_url}
+      />
+
+      {page === 'profile' ? (
+        <ProfilePage userId={userId} userEmail={user?.email} onSignOut={signOut} />
+      ) : page === 'stats' ? (
+        <StatsPage categoryCounts={categoryCounts} completedTasks={completedTasks} onResetStats={resetStats} boards={boards} tasks={tasks} />
+      ) : page === 'habits' ? (
+        <HabitsPage
+          habits={habits}
+          habitLog={habitLog}
+          onAddHabit={addHabit}
+          onEditHabit={editHabit}
+          onDeleteHabit={deleteHabit}
+          onToggleToday={toggleHabitToday}
+          onToggleDay={toggleHabitDay}
+          onAddOption={addHabitOption}
+          onDeleteOption={deleteHabitOption}
+        />
+      ) : page === 'learning' ? (
+        <LearningPage
+          learningGoals={learningGoals}
+          journalEntries={journalEntries}
+          onAddGoal={addLearningGoal}
+          onUpdateProgress={updateProgress}
+          onSetReminder={setReminderInterval}
+          onDeleteGoal={deleteLearningGoal}
+          onAddJournalEntry={addJournalEntry}
+          onEditJournalEntry={editJournalEntry}
+          onDeleteJournalEntry={deleteJournalEntry}
+        />
+      ) : page === 'calendar' ? (
+        <CalendarPage
+          events={events}
+          onAddEvent={addEvent}
+          onEditEvent={editEvent}
+          onDeleteEvent={deleteEvent}
+          onToggleEventDone={toggleEventDone}
+        />
+      ) : (
+        <div className="flex flex-col flex-1">
+          <BoardSwitcher
+            boards={boards}
+            activeBoardId={activeBoardId}
+            onSelect={setActiveBoardId}
+            onAddBoard={addBoard}
+            onDeleteBoard={handleDeleteBoard}
+          />
+
+          <div className="flex flex-col sm:flex-row flex-1">
+            <div className="flex flex-col items-center pt-6 px-4 pb-4 sm:pb-0 border-b sm:border-b-0 sm:border-r border-border w-full sm:w-[220px] shrink-0 bg-bg">
+              <Jar beadCount={beadCount} jarRef={jarRef} onReset={resetJar} />
+              <Stats
+                beadCount={beadCount}
+                weeklyCount={weeklyCount}
+                dailyGoal={dailyGoal}
+                weeklyGoal={weeklyGoal}
+                onSetDailyGoal={setDailyGoal}
+                onSetWeeklyGoal={setWeeklyGoal}
+                onResetWeeklyGoal={resetWeeklyGoal}
+              />
+              <div className="w-full mt-3">
+                <PomodoroTimer
+                  activeSession={activeSession}
+                  computeSecondsLeft={computeSecondsLeft}
+                  tasks={boardTasks.filter((t) => t.col === 'inprog')}
+                  onStart={startSession}
+                  onToggle={toggleRunning}
+                  onModeComplete={advanceToNextMode}
+                  onReset={resetSession}
+                  onCancel={handlePomodoroCancel}
+                />
+              </div>
+            </div>
+
+            <KanbanBoard
+              tasks={boardTasks}
+              onStart={(id) => moveTask(id, 'inprog')}
+              onBack={(id) => moveTask(id, 'todo')}
               onComplete={handleComplete}
+              onAdd={(name, category, col) => addTask(name, category, activeBoardId, col)}
+              onDelete={deleteTask}
+              onEdit={editTask}
               onDropTask={handleDropTask}
-              onAddBoard={addBoard}
-              onDeleteBoard={deleteBoard}
-              onResetJar={resetJar}
-              jarRef={jarRef}
               cardRefs={cardRefs}
-              activeSession={activeSession}
-              computeSecondsLeft={computeSecondsLeft}
-              onPomodoroStart={startSession}
-              onPomodoroToggle={toggleRunning}
-              onPomodoroModeComplete={advanceToNextMode}
-              onPomodoroReset={resetSession}
-              onPomodoroCancel={handlePomodoroCancel}
             />
-          }
-        />
-        <Route
-          path="/stats"
-          element={
-            <StatsPage
-              categoryCounts={categoryCounts}
-              completedTasks={completedTasks}
-              onResetStats={resetStats}
-              boards={boards}
-              tasks={tasks}
-            />
-          }
-        />
-        <Route
-          path="/habits"
-          element={
-            <HabitsPage
-              habits={habits}
-              habitLog={habitLog}
-              onAddHabit={addHabit}
-              onEditHabit={editHabit}
-              onDeleteHabit={deleteHabit}
-              onToggleToday={toggleHabitToday}
-              onToggleDay={toggleHabitDay}
-              onAddOption={addHabitOption}
-              onDeleteOption={deleteHabitOption}
-            />
-          }
-        />
-        <Route
-          path="/learning/*"
-          element={
-            <LearningPage
-              learningGoals={learningGoals}
-              journalEntries={journalEntries}
-              onAddGoal={addLearningGoal}
-              onUpdateProgress={updateProgress}
-              onSetReminder={setReminderInterval}
-              onDeleteGoal={deleteLearningGoal}
-              onAddJournalEntry={addJournalEntry}
-              onEditJournalEntry={editJournalEntry}
-              onDeleteJournalEntry={deleteJournalEntry}
-            />
-          }
-        />
-        <Route
-          path="/calendar"
-          element={
-            <CalendarPage
-              events={events}
-              onAddEvent={addEvent}
-              onEditEvent={editEvent}
-              onDeleteEvent={deleteEvent}
-              onToggleEventDone={toggleEventDone}
-            />
-          }
-        />
-      </Routes>
+          </div>
+        </div>
+      )}
 
       <AnimatePresence>
         {flyingBeads.map((bead) => (
@@ -269,15 +303,9 @@ export default function App() {
             }}
             onAnimationComplete={() => handleFlightComplete(bead.id)}
             style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              width: 16,
-              height: 16,
-              borderRadius: '50%',
-              background: bead.color,
-              pointerEvents: 'none',
-              zIndex: 50,
+              position: 'fixed', top: 0, left: 0,
+              width: 16, height: 16, borderRadius: '50%',
+              background: bead.color, pointerEvents: 'none', zIndex: 50,
             }}
           />
         ))}
@@ -298,18 +326,16 @@ export default function App() {
                   animate={{ x: Math.cos(angle) * 24, y: Math.sin(angle) * 24, opacity: 0, scale: 0.3 }}
                   transition={{ duration: 0.5, ease: 'easeOut' }}
                   onAnimationComplete={i === 0 ? () => handleBreakComplete(burst.id) : undefined}
-                  style={{
-                    position: 'absolute',
-                    width: 6,
-                    height: 6,
-                    borderRadius: '50%',
-                    background: '#FF4B4B',
-                  }}
+                  style={{ position: 'absolute', width: 6, height: 6, borderRadius: '50%', background: '#FF4B4B' }}
                 />
               )
             })}
           </motion.div>
         ))}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
       </AnimatePresence>
     </div>
   )

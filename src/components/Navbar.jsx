@@ -1,5 +1,5 @@
 import { Flame } from 'lucide-react'
-import { Link, useLocation } from 'react-router-dom'
+import { colors } from '../utils/colors'
 import { useTranslation } from '../i18n/LanguageContext'
 import { useBakuClock } from '../hooks/useBakuClock'
 
@@ -62,19 +62,41 @@ function formatDateTime(lang, date, { short } = {}) {
   return `${weekday}, ${month} ${day}, ${year} · ${time}`
 }
 
-export default function Navbar({ streakDays }) {
+export default function Navbar({ streakDays, page, onNavigate, user, onSignIn, onSignOut, profileName, profileAvatar }) {
   const { lang, setLang, t } = useTranslation()
   const now = useBakuClock()
-  const location = useLocation()
-  const activeTab = location.pathname.startsWith('/stats')
-    ? 'stats'
-    : location.pathname.startsWith('/habits')
-      ? 'habits'
-      : location.pathname.startsWith('/learning')
-        ? 'learning'
-        : location.pathname.startsWith('/calendar')
-          ? 'calendar'
-          : 'board'
+
+  const initials = profileName?.trim()
+    ? profileName.trim().split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
+    : (user?.email?.[0] ?? '?').toUpperCase()
+
+  const AuthButton = user ? (
+    <button
+      onClick={() => onNavigate('profile')}
+      className="flex items-center justify-center rounded-full text-white text-[12px] font-extrabold shrink-0 overflow-hidden border-2"
+      style={{
+        width: 32,
+        height: 32,
+        background: colors.accent,
+        borderColor: page === 'profile' ? colors.accentDark : 'transparent',
+      }}
+      aria-label="Profile"
+    >
+      {profileAvatar ? (
+        <img src={profileAvatar} alt="avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+      ) : (
+        initials
+      )}
+    </button>
+  ) : (
+    <button
+      onClick={onSignIn}
+      className="text-[12px] font-extrabold px-3 py-1.5 rounded-xl border-2 shrink-0"
+      style={{ borderColor: colors.accent, color: colors.accent }}
+    >
+      {t('authLoginButton')}
+    </button>
+  )
 
   return (
     <div className="border-b border-border bg-surface">
@@ -85,21 +107,21 @@ export default function Navbar({ streakDays }) {
 
         <div className="flex items-center gap-1 text-[12px] font-extrabold">
           {[
-            { to: '/', key: 'board', label: t('navBoard') },
-            { to: '/stats', key: 'stats', label: t('navStats') },
-            { to: '/habits', key: 'habits', label: t('navHabits') },
-            { to: '/learning', key: 'learning', label: t('navLearning') },
-            { to: '/calendar', key: 'calendar', label: t('navCalendar') },
-          ].map(({ to, key, label }) => (
-            <Link
-              key={key}
-              to={to}
+            { id: 'board', label: t('navBoard') },
+            { id: 'stats', label: t('navStats') },
+            { id: 'habits', label: t('navHabits') },
+            { id: 'learning', label: t('navLearning') },
+            { id: 'calendar', label: t('navCalendar') },
+          ].map(({ id, label }) => (
+            <button
+              key={id}
+              onClick={() => onNavigate(id)}
               className={`px-3 py-1.5 rounded-xl transition-colors whitespace-nowrap ${
-                activeTab === key ? 'bg-accentSoft text-accentDark' : 'text-textSecondary hover:bg-surfaceAlt'
+                page === id ? 'bg-accentSoft text-accentDark' : 'text-textSecondary hover:bg-surfaceAlt'
               }`}
             >
               {label}
-            </Link>
+            </button>
           ))}
         </div>
 
@@ -113,19 +135,19 @@ export default function Navbar({ streakDays }) {
           {t('streak', { n: streakDays })}
         </span>
 
-        <div className="flex items-center rounded-xl border-2 border-border overflow-hidden text-[11px] font-extrabold shrink-0 ml-auto sm:ml-0">
+        <div className="flex items-center rounded-xl border-2 border-border overflow-hidden text-[11px] font-extrabold shrink-0">
           {['az', 'en'].map((code) => (
             <button
               key={code}
               onClick={() => setLang(code)}
-              className={`px-2.5 py-1 transition-colors ${
-                lang === code ? 'bg-accent text-white' : 'text-textSecondary'
-              }`}
+              className={`px-2.5 py-1 transition-colors ${lang === code ? 'bg-accent text-white' : 'text-textSecondary'}`}
             >
               {code.toUpperCase()}
             </button>
           ))}
         </div>
+
+        <div className="shrink-0 ml-auto sm:ml-0">{AuthButton}</div>
       </div>
     </div>
   )

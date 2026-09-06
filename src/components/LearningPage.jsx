@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 import { format } from 'date-fns'
 import { useTranslation } from '../i18n/LanguageContext'
@@ -95,8 +94,7 @@ export default function LearningPage({
   onDeleteJournalEntry,
 }) {
   const { t } = useTranslation()
-  const location = useLocation()
-  const isJournal = location.pathname.startsWith('/learning/journal')
+  const [isJournal, setIsJournal] = useState(false)
   const [activeSub, setActiveSub] = useState('books')
   const [adding, setAdding] = useState(false)
 
@@ -108,15 +106,12 @@ export default function LearningPage({
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-extrabold text-textPrimary">{t('learningTitle')}</h1>
         <div className="flex items-center rounded-xl border-2 border-border overflow-hidden text-[12px] font-extrabold">
-          <Link to="/learning" className={`px-3 py-1.5 ${!isJournal ? 'bg-accent text-white' : 'text-textSecondary'}`}>
+          <button onClick={() => setIsJournal(false)} className={`px-3 py-1.5 ${!isJournal ? 'bg-accent text-white' : 'text-textSecondary'}`}>
             {t('learningGoalsTab')}
-          </Link>
-          <Link
-            to="/learning/journal"
-            className={`px-3 py-1.5 ${isJournal ? 'bg-accent text-white' : 'text-textSecondary'}`}
-          >
+          </button>
+          <button onClick={() => setIsJournal(true)} className={`px-3 py-1.5 ${isJournal ? 'bg-accent text-white' : 'text-textSecondary'}`}>
             {t('learningJournalTab')}
-          </Link>
+          </button>
         </div>
       </div>
 
