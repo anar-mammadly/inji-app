@@ -13,19 +13,6 @@ const DEFAULT_BOARDS = [
 
 const DEFAULT_SPORT_OPTIONS = ['Qaçış', 'İdman zalı', 'Gəzinti', 'Yoqa', 'Digər']
 
-const DEFAULT_HABITS = [
-  {
-    id: 'sport',
-    name: 'Sport',
-    kind: 'sport',
-    color: null,
-    targetDays: 30,
-    startDate: todayISO(),
-    subOptions: DEFAULT_SPORT_OPTIONS,
-    createdAt: new Date().toISOString(),
-  },
-]
-
 function defaultState() {
   return {
     tasks: [],
@@ -41,7 +28,7 @@ function defaultState() {
     completedTasks: [],
     activeSession: null,
     pomodoroHistory: [],
-    habits: DEFAULT_HABITS,
+    habits: [],
     habitLog: {},
     learningGoals: [],
     journalEntries: [],
@@ -51,9 +38,7 @@ function defaultState() {
 
 function ensureSportHabit(habits) {
   const list = habits || []
-  const hasSport = list.some((h) => h.kind === 'sport')
-  const withSport = hasSport ? list : [...list, DEFAULT_HABITS[0]]
-  return withSport.map((h) => ({
+  return list.map((h) => ({
     ...h,
     targetDays: h.targetDays || 30,
     startDate: h.startDate || todayISO(),
