@@ -2,7 +2,7 @@
 
 Inji ("pearl" in Azerbaijani) is a lightweight productivity app built around a Kanban board and a reward jar: every task you complete drops a bead into a glass jar, giving you a visual sense of daily progress.
 
-No backend, no accounts — everything is stored locally in the browser.
+Signed-in users sync boards, tasks, and bead progress to Supabase. Guest data is stored locally in the browser.
 
 ## Features
 
@@ -23,7 +23,8 @@ No backend, no accounts — everything is stored locally in the browser.
 - Tailwind CSS
 - Framer Motion (animations)
 - Web Audio API (synthesized sound effects, no audio files)
-- Browser `localStorage` for persistence
+- Supabase `user_data` JSON for signed-in persistence
+- Browser `localStorage` as the guest fallback and offline cache
 
 ## Getting started
 
@@ -33,6 +34,10 @@ npm run dev
 ```
 
 Then open the printed local URL in your browser.
+
+For signed-in persistence, create a `.env` file with `VITE_SUPABASE_URL` and
+`VITE_SUPABASE_ANON_KEY`, then apply `supabase/schema.sql` in the Supabase SQL
+Editor.
 
 ## Build
 

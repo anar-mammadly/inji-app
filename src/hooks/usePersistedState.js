@@ -46,8 +46,8 @@ function ensureSportHabit(habits) {
   }))
 }
 
-function loadInitialState(storageKey) {
-  const raw = localStorage.getItem(storageKey)
+function loadInitialState(storageKey, useLocalStorage = true) {
+  const raw = useLocalStorage ? localStorage.getItem(storageKey) : null
   const base = raw ? JSON.parse(raw) : defaultState()
   const merged = { ...defaultState(), ...base }
   merged.habits = ensureSportHabit(merged.habits)
@@ -57,17 +57,33 @@ function loadInitialState(storageKey) {
 
 export function usePersistedState(userId) {
   const storageKey = `inji_state_${userId}`
-  const [state, setState] = useState(() => loadInitialState(storageKey))
+  const isGuest = userId === 'guest'
+  const [state, setState] = useState(() => loadInitialState(storageKey, isGuest))
   const stateRef = useRef(state)
   const [loaded, setLoaded] = useState(false)
   const prevUserIdRef = useRef(userId)
   const skipSaveRef = useRef(false)
+  const persistQueueRef = useRef(Promise.resolve())
+  const persistenceReadyRef = useRef(isGuest)
+
+  function persistState(nextState, targetUserId = userId) {
+    if (!targetUserId || targetUserId === 'guest') return
+    persistQueueRef.current = persistQueueRef.current
+      .catch(() => {})
+      .then(() => supabase
+        .from('user_data')
+        .upsert({ user_id: targetUserId, data: nextState, updated_at: new Date().toISOString() }, { onConflict: 'user_id' }))
+      .then(({ error }) => {
+        if (error) console.error('Supabase sync failed:', error.message)
+      })
+  }
 
   useEffect(() => {
     if (prevUserIdRef.current === userId) return
     const prevUserId = prevUserIdRef.current
     prevUserIdRef.current = userId
     setLoaded(false)
+    persistenceReadyRef.current = false
     skipSaveRef.current = true
     if (prevUserId === 'guest' && userId !== 'guest') {
       const userRaw = localStorage.getItem(storageKey)
@@ -79,7 +95,7 @@ export function usePersistedState(userId) {
       }
       localStorage.removeItem('inji_state_guest')
     }
-    setState(loadInitialState(storageKey))
+    setState(loadInitialState(storageKey, false))
   }, [userId, storageKey])
 
   useEffect(() => {
@@ -96,6 +112,7 @@ export function usePersistedState(userId) {
       .maybeSingle()
       .then(({ data, error }) => {
         if (!active) return
+        persistenceReadyRef.current = !error
         if (!error && data?.data && typeof data.data === 'object') {
           const merged = { ...defaultState(), ...data.data }
           merged.habits = ensureSportHabit(merged.habits)
@@ -106,6 +123,7 @@ export function usePersistedState(userId) {
       })
       .catch(() => {
         if (!active) return
+        persistenceReadyRef.current = false
         setLoaded(true)
       })
 
@@ -124,23 +142,16 @@ export function usePersistedState(userId) {
   }, [state, storageKey])
 
   useEffect(() => {
-    if (!userId || userId === 'guest' || !loaded) return
-    const timeout = setTimeout(() => {
-      supabase
-        .from('user_data')
-        .upsert({ user_id: userId, data: state, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
-        .then(({ error }) => {
-          if (error) console.error('Supabase sync failed:', error.message)
-        })
-    }, 500)
-    return () => clearTimeout(timeout)
-  }, [state, userId, loaded])
+    if (!userId || userId === 'guest' || !loaded || !persistenceReadyRef.current) return
+    persistState(stateRef.current)
+  }, [userId, loaded])
 
   function updateState(update) {
     const nextState = typeof update === 'function' ? update(stateRef.current) : update
     stateRef.current = nextState
     localStorage.setItem(storageKey, JSON.stringify(nextState))
     setState(nextState)
+    if (!isGuest && loaded && persistenceReadyRef.current) persistState(nextState)
   }
 
   return [state, updateState]
