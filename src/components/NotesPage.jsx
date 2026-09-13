@@ -42,7 +42,7 @@ export default function NotesPage({ notes, onAddNote, onEditNote, onDeleteNote }
   const [adding, setAdding] = useState(false)
 
   return (
-    <div className="flex-1 px-6 py-8 max-w-[960px] mx-auto w-full">
+    <div className="flex-1 px-4 sm:px-6 py-6 sm:py-8 max-w-[960px] mx-auto w-full overflow-x-hidden">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-extrabold text-textPrimary">{t('notesTitle')}</h1>
         <button
@@ -67,7 +67,7 @@ export default function NotesPage({ notes, onAddNote, onEditNote, onDeleteNote }
       {notes.length === 0 ? (
         <div className="text-sm font-bold text-textMuted">{t('noNotes')}</div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 p-1">
           {notes.map((note, i) => (
             <NoteCard
               key={note.id}

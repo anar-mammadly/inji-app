@@ -105,25 +105,27 @@ export default function Navbar({ streakDays, page, onNavigate, user, onSignIn, o
           i<span className="text-accent">n</span>ji
         </div>
 
-        <div className="flex items-center gap-1 text-[12px] font-extrabold">
-          {[
-            { id: 'board', label: t('navBoard') },
-            { id: 'stats', label: t('navStats') },
-            { id: 'habits', label: t('navHabits') },
-            { id: 'learning', label: t('navLearning') },
-            { id: 'calendar', label: t('navCalendar') },
-            { id: 'notes', label: t('navNotes') },
-          ].map(({ id, label }) => (
-            <button
-              key={id}
-              onClick={() => onNavigate(id)}
-              className={`px-3 py-1.5 rounded-xl transition-colors whitespace-nowrap ${
-                page === id ? 'bg-accentSoft text-accentDark' : 'text-textSecondary hover:bg-surfaceAlt'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+        <div className="basis-full sm:basis-auto order-1 sm:order-none -mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-1 text-[12px] font-extrabold w-max sm:w-auto">
+            {[
+              { id: 'board', label: t('navBoard') },
+              { id: 'stats', label: t('navStats') },
+              { id: 'habits', label: t('navHabits') },
+              { id: 'learning', label: t('navLearning') },
+              { id: 'calendar', label: t('navCalendar') },
+              { id: 'notes', label: t('navNotes') },
+            ].map(({ id, label }) => (
+              <button
+                key={id}
+                onClick={() => onNavigate(id)}
+                className={`px-3 py-1.5 rounded-xl transition-colors whitespace-nowrap ${
+                  page === id ? 'bg-accentSoft text-accentDark' : 'text-textSecondary hover:bg-surfaceAlt'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="order-last sm:order-none sm:ml-auto text-[11px] sm:text-sm font-bold text-textSecondary whitespace-nowrap">

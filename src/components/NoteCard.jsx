@@ -9,7 +9,7 @@ export default function NoteCard({ note, index, onEdit, onDelete }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(note.text)
   const { bg, fold } = stickyNoteColors[index % stickyNoteColors.length]
-  const tilt = (index % 2 === 0 ? 1 : -1) * ((index % 3) + 1)
+  const tilt = (index % 2 === 0 ? 1 : -1) * ((index % 3) + 1) * 0.6
 
   function commit() {
     const trimmed = draft.trim()
