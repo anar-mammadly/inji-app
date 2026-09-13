@@ -28,6 +28,17 @@ export const colors = {
 
 export const beadColors = ['#58CC02', '#1CB0F6', '#FF9600', '#CE82FF', '#FF4B4B', '#FFC800']
 
+// Pastel sticky-note backgrounds, rotated by note index. Each pairs a soft fill
+// with a slightly deeper "fold" tint for the corner shadow accent.
+export const stickyNoteColors = [
+  { bg: '#FFF3B0', fold: '#F5DE7A' },
+  { bg: '#C9F2C7', fold: '#A6E3A3' },
+  { bg: '#BFE3FF', fold: '#93CDFB' },
+  { bg: '#FFD3E0', fold: '#FBB3C7' },
+  { bg: '#E6D6FF', fold: '#CDB3F7' },
+  { bg: '#FFDDB0', fold: '#F7C285' },
+]
+
 export function darken(hex, amount) {
   const num = parseInt(hex.slice(1), 16)
   const r = Math.max(0, Math.floor(((num >> 16) & 0xff) * (1 - amount)))

@@ -112,6 +112,7 @@ export default function Navbar({ streakDays, page, onNavigate, user, onSignIn, o
             { id: 'habits', label: t('navHabits') },
             { id: 'learning', label: t('navLearning') },
             { id: 'calendar', label: t('navCalendar') },
+            { id: 'notes', label: t('navNotes') },
           ].map(({ id, label }) => (
             <button
               key={id}

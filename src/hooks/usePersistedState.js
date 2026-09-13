@@ -33,6 +33,7 @@ function defaultState() {
     learningGoals: [],
     journalEntries: [],
     events: [],
+    notes: [],
   }
 }
 
