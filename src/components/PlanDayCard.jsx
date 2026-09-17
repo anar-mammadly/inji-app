@@ -30,8 +30,10 @@ export default function PlanDayCard({ day, onSetTitle, onAddTodo, onToggleTodo, 
   }
 
   return (
-    <div className="rounded-2xl border-2 border-border bg-surface p-3 flex flex-col gap-2 min-w-0">
-      <div className="text-[11px] font-extrabold uppercase tracking-wide text-textMuted">{t(DAY_LABEL_KEYS[day.id])}</div>
+    <div className="rounded-2xl border-2 border-border bg-surface p-3.5 flex flex-col gap-2 min-w-0 shadow-card">
+      <div className="text-[10px] font-extrabold uppercase tracking-wide text-textMuted">
+        {t(DAY_LABEL_KEYS[day.id])}
+      </div>
       <input
         type="text"
         value={titleDraft}
@@ -39,10 +41,10 @@ export default function PlanDayCard({ day, onSetTitle, onAddTodo, onToggleTodo, 
         onBlur={commitTitle}
         onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
         placeholder={t('planDayTitlePlaceholder')}
-        className="px-2 py-1.5 text-[13px] font-extrabold rounded-xl border-2 border-border outline-none focus:border-accent"
+        className="w-full min-w-0 truncate px-2.5 py-1.5 font-extrabold rounded-xl border-2 border-border outline-none focus:border-accent"
       />
 
-      <div className="flex flex-col gap-1 mt-1">
+      <div className="flex flex-col gap-1.5 mt-0.5">
         {todos.map((todo) => (
           <PlanTodoRow
             key={todo.id}
@@ -52,16 +54,16 @@ export default function PlanDayCard({ day, onSetTitle, onAddTodo, onToggleTodo, 
             onDelete={() => onDeleteTodo(todo.id)}
           />
         ))}
-        {todos.length === 0 && <div className="text-[11px] font-bold text-textMuted py-1">{t('planNoTodos')}</div>}
+        {todos.length === 0 && <div className="text-[11px] font-bold text-textMuted py-0.5">{t('planNoTodos')}</div>}
       </div>
 
-      <form onSubmit={handleAddTodo} className="flex items-center gap-1 mt-1">
+      <form onSubmit={handleAddTodo} className="flex items-center gap-1.5 mt-0.5">
         <input
           type="text"
           value={newTodo}
           onChange={(e) => setNewTodo(e.target.value)}
           placeholder={t('planTodoPlaceholder')}
-          className="flex-1 min-w-0 px-2 py-1.5 text-[12px] font-semibold rounded-xl border-2 border-border outline-none focus:border-accent"
+          className="flex-1 min-w-0 truncate px-2.5 py-1.5 text-[12px] font-semibold rounded-xl border-2 border-border outline-none focus:border-accent placeholder:text-[11px]"
         />
         <button
           type="submit"
