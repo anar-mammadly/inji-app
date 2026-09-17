@@ -13,6 +13,12 @@ const DEFAULT_BOARDS = [
 
 const DEFAULT_SPORT_OPTIONS = ['Qaçış', 'İdman zalı', 'Gəzinti', 'Yoqa', 'Digər']
 
+const DEFAULT_PLAN_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].map((id) => ({
+  id,
+  title: '',
+  todos: [],
+}))
+
 function defaultState() {
   return {
     tasks: [],
@@ -34,6 +40,8 @@ function defaultState() {
     journalEntries: [],
     events: [],
     notes: [],
+    planDays: DEFAULT_PLAN_DAYS,
+    planGoals: [],
   }
 }
 

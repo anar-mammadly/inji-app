@@ -11,6 +11,7 @@ import HabitsPage from './components/HabitsPage'
 import LearningPage from './components/LearningPage'
 import CalendarPage from './components/CalendarPage'
 import NotesPage from './components/NotesPage'
+import PlanPage from './components/PlanPage'
 import ProfilePage from './components/ProfilePage'
 import AuthModal from './components/AuthModal'
 import PullToRefreshIndicator from './components/PullToRefreshIndicator'
@@ -22,6 +23,7 @@ import { useHabitStore } from './hooks/useHabitStore'
 import { useLearningStore } from './hooks/useLearningStore'
 import { useCalendarStore } from './hooks/useCalendarStore'
 import { useNotesStore } from './hooks/useNotesStore'
+import { usePlanStore } from './hooks/usePlanStore'
 import { useReminders } from './hooks/useReminders'
 import { useProfile } from './hooks/useProfile'
 import { useAuth } from './contexts/AuthContext'
@@ -100,6 +102,19 @@ export default function App() {
   const { events, addEvent, editEvent, deleteEvent, toggleEventDone } = useCalendarStore(state, setState)
 
   const { notes, addNote, editNote, deleteNote } = useNotesStore(state, setState)
+
+  const {
+    planDays,
+    planGoals,
+    setDayTitle,
+    addTodo,
+    toggleTodo,
+    editTodo,
+    deleteTodo,
+    addGoal,
+    updateGoalProgress,
+    deleteGoal,
+  } = usePlanStore(state, setState)
 
   const { profile } = useProfile(userId)
 
@@ -237,6 +252,19 @@ export default function App() {
           onEditEvent={editEvent}
           onDeleteEvent={deleteEvent}
           onToggleEventDone={toggleEventDone}
+        />
+      ) : page === 'plan' ? (
+        <PlanPage
+          planDays={planDays}
+          planGoals={planGoals}
+          onSetDayTitle={setDayTitle}
+          onAddTodo={addTodo}
+          onToggleTodo={toggleTodo}
+          onEditTodo={editTodo}
+          onDeleteTodo={deleteTodo}
+          onAddGoal={addGoal}
+          onUpdateGoalProgress={updateGoalProgress}
+          onDeleteGoal={deleteGoal}
         />
       ) : page === 'notes' ? (
         <NotesPage
