@@ -55,20 +55,46 @@ function ensureSportHabit(habits) {
   }))
 }
 
-function loadInitialState(storageKey, useLocalStorage = true) {
-  const raw = useLocalStorage ? localStorage.getItem(storageKey) : null
-  const base = raw ? JSON.parse(raw) : defaultState()
-  const merged = { ...defaultState(), ...base }
+function buildState(rawData) {
+  const merged = { ...defaultState(), ...(rawData || {}) }
   merged.habits = ensureSportHabit(merged.habits)
   const rolled = applyDateRollover(merged)
   return { ...merged, ...rolled }
 }
 
+// Local cache entries are wrapped with a `savedAt` timestamp so a reload can
+// tell whether the browser's copy or the server's copy is more recent —
+// without it, a slow/aborted Supabase write (e.g. a hard refresh right after
+// an edit) gets silently overwritten by the stale server copy on next load.
+function loadStoredEntry(storageKey) {
+  const raw = localStorage.getItem(storageKey)
+  if (!raw) return null
+  try {
+    const parsed = JSON.parse(raw)
+    if (parsed && typeof parsed === 'object' && parsed.savedAt && parsed.data && typeof parsed.data === 'object') {
+      return { data: parsed.data, savedAt: parsed.savedAt }
+    }
+    // Legacy (pre-timestamp) cache: still usable as data, just treat it as
+    // maximally stale so a real server record always wins the comparison.
+    if (parsed && typeof parsed === 'object') {
+      return { data: parsed, savedAt: null }
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+function saveStoredEntry(storageKey, data, savedAt = new Date().toISOString()) {
+  localStorage.setItem(storageKey, JSON.stringify({ data, savedAt }))
+}
+
 export function usePersistedState(userId) {
   const storageKey = `inji_state_${userId}`
   const isGuest = userId === 'guest'
-  const [state, setState] = useState(() => loadInitialState(storageKey, isGuest))
+  const [state, setState] = useState(() => buildState(loadStoredEntry(storageKey)?.data))
   const stateRef = useRef(state)
+  const savedAtRef = useRef(loadStoredEntry(storageKey)?.savedAt ?? null)
   const [loaded, setLoaded] = useState(false)
   const prevUserIdRef = useRef(userId)
   const skipSaveRef = useRef(false)
@@ -77,13 +103,15 @@ export function usePersistedState(userId) {
 
   function persistState(nextState, targetUserId = userId) {
     if (!targetUserId || targetUserId === 'guest') return
+    const savedAt = new Date().toISOString()
     persistQueueRef.current = persistQueueRef.current
       .catch(() => {})
       .then(() => supabase
         .from('user_data')
-        .upsert({ user_id: targetUserId, data: nextState, updated_at: new Date().toISOString() }, { onConflict: 'user_id' }))
+        .upsert({ user_id: targetUserId, data: nextState, updated_at: savedAt }, { onConflict: 'user_id' }))
       .then(({ error }) => {
         if (error) console.error('Supabase sync failed:', error.message)
+        else savedAtRef.current = savedAt
       })
   }
 
@@ -104,7 +132,9 @@ export function usePersistedState(userId) {
       }
       localStorage.removeItem('inji_state_guest')
     }
-    setState(loadInitialState(storageKey, false))
+    const entry = loadStoredEntry(storageKey)
+    savedAtRef.current = entry?.savedAt ?? null
+    setState(buildState(entry?.data))
   }, [userId, storageKey])
 
   useEffect(() => {
@@ -116,17 +146,28 @@ export function usePersistedState(userId) {
 
     supabase
       .from('user_data')
-      .select('data')
+      .select('data, updated_at')
       .eq('user_id', userId)
       .maybeSingle()
       .then(({ data, error }) => {
         if (!active) return
         persistenceReadyRef.current = !error
-        if (!error && data?.data && typeof data.data === 'object') {
-          const merged = { ...defaultState(), ...data.data }
-          merged.habits = ensureSportHabit(merged.habits)
-          const rolled = applyDateRollover(merged)
-          setState({ ...merged, ...rolled })
+        if (!error) {
+          const serverUpdatedAt = data?.updated_at ? new Date(data.updated_at).getTime() : -1
+          const localSavedAt = savedAtRef.current ? new Date(savedAtRef.current).getTime() : -1
+
+          if (data?.data && typeof data.data === 'object' && serverUpdatedAt > localSavedAt) {
+            // Server has a newer copy (e.g. edited from another device) — adopt it.
+            const nextState = buildState(data.data)
+            stateRef.current = nextState
+            savedAtRef.current = data.updated_at
+            saveStoredEntry(storageKey, nextState, data.updated_at)
+            setState(nextState)
+          } else if (localSavedAt > serverUpdatedAt) {
+            // Our local copy is newer than what the server has — a previous
+            // write likely never completed (e.g. refreshed mid-save). Re-send it.
+            persistState(stateRef.current)
+          }
         }
         setLoaded(true)
       })
@@ -147,18 +188,15 @@ export function usePersistedState(userId) {
       skipSaveRef.current = false
       return
     }
-    localStorage.setItem(storageKey, JSON.stringify(state))
+    saveStoredEntry(storageKey, state, savedAtRef.current ?? undefined)
   }, [state, storageKey])
-
-  useEffect(() => {
-    if (!userId || userId === 'guest' || !loaded || !persistenceReadyRef.current) return
-    persistState(stateRef.current)
-  }, [userId, loaded])
 
   function updateState(update) {
     const nextState = typeof update === 'function' ? update(stateRef.current) : update
     stateRef.current = nextState
-    localStorage.setItem(storageKey, JSON.stringify(nextState))
+    const savedAt = new Date().toISOString()
+    savedAtRef.current = savedAt
+    saveStoredEntry(storageKey, nextState, savedAt)
     setState(nextState)
     if (!isGuest && loaded && persistenceReadyRef.current) persistState(nextState)
   }
