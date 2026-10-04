@@ -69,6 +69,7 @@ export default function PlanPage({
   onAddTodo,
   onToggleTodo,
   onEditTodo,
+  onSetTodoTime,
   onDeleteTodo,
   onAddGoal,
   onUpdateGoalProgress,
@@ -79,7 +80,10 @@ export default function PlanPage({
 
   return (
     <div className="flex-1 px-4 sm:px-6 py-6 sm:py-8 max-w-[980px] mx-auto w-full overflow-x-hidden">
-      <h1 className="text-xl font-extrabold text-textPrimary mb-4">{t('planWeekTitle')}</h1>
+      <div className="mb-5">
+        <h1 className="text-xl font-extrabold text-textPrimary">{t('planWeekTitle')}</h1>
+        <p className="text-[12px] font-semibold text-textMuted mt-0.5">{t('planWeekSubtitle')}</p>
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
         {planDays.map((day) => (
@@ -87,15 +91,16 @@ export default function PlanPage({
             key={day.id}
             day={day}
             onSetTitle={(title) => onSetDayTitle(day.id, title)}
-            onAddTodo={(text) => onAddTodo(day.id, text)}
+            onAddTodo={(text, time) => onAddTodo(day.id, text, time)}
             onToggleTodo={(todoId) => onToggleTodo(day.id, todoId)}
             onEditTodo={(todoId, text) => onEditTodo(day.id, todoId, text)}
+            onSetTodoTime={(todoId, time) => onSetTodoTime(day.id, todoId, time)}
             onDeleteTodo={(todoId) => onDeleteTodo(day.id, todoId)}
           />
         ))}
       </div>
 
-      <div className="flex items-center justify-between mt-8 mb-4">
+      <div className="flex items-center justify-between mt-9 mb-4 pt-5 border-t border-border">
         <h2 className="text-lg font-extrabold text-textPrimary">{t('planGoalsTitle')}</h2>
         <button
           onClick={() => setAddingGoal((a) => !a)}

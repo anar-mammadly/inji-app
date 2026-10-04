@@ -110,6 +110,7 @@ export default function App() {
     addTodo,
     toggleTodo,
     editTodo,
+    setTodoTime,
     deleteTodo,
     addGoal,
     updateGoalProgress,
@@ -261,6 +262,7 @@ export default function App() {
           onAddTodo={addTodo}
           onToggleTodo={toggleTodo}
           onEditTodo={editTodo}
+          onSetTodoTime={setTodoTime}
           onDeleteTodo={deleteTodo}
           onAddGoal={addGoal}
           onUpdateGoalProgress={updateGoalProgress}

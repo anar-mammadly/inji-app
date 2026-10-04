@@ -16,10 +16,10 @@ export function usePlanStore(state, setState) {
     }))
   }
 
-  function addTodo(dayId, text) {
+  function addTodo(dayId, text, time) {
     const trimmed = text.trim()
     if (!trimmed) return
-    const todo = { id: generateId(), text: trimmed, done: false }
+    const todo = { id: generateId(), text: trimmed, done: false, time: time || null }
     setState((s) => ({
       ...s,
       planDays: (s.planDays || []).map((d) => (d.id === dayId ? { ...d, todos: [...(d.todos || []), todo] } : d)),
@@ -45,6 +45,17 @@ export function usePlanStore(state, setState) {
       planDays: (s.planDays || []).map((d) =>
         d.id === dayId
           ? { ...d, todos: (d.todos || []).map((t) => (t.id === todoId ? { ...t, text: trimmed } : t)) }
+          : d,
+      ),
+    }))
+  }
+
+  function setTodoTime(dayId, todoId, time) {
+    setState((s) => ({
+      ...s,
+      planDays: (s.planDays || []).map((d) =>
+        d.id === dayId
+          ? { ...d, todos: (d.todos || []).map((t) => (t.id === todoId ? { ...t, time: time || null } : t)) }
           : d,
       ),
     }))
@@ -95,6 +106,7 @@ export function usePlanStore(state, setState) {
     addTodo,
     toggleTodo,
     editTodo,
+    setTodoTime,
     deleteTodo,
     addGoal,
     updateGoalProgress,
