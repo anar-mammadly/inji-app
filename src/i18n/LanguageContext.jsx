@@ -9,6 +9,7 @@ export function LanguageProvider({ children }) {
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, lang)
+    document.documentElement.lang = lang
   }, [lang])
 
   function t(key, vars = {}) {
