@@ -62,20 +62,22 @@ function buildState(rawData) {
   return { ...merged, ...rolled }
 }
 
-// Local cache entries are wrapped with a `savedAt` timestamp so a reload can
-// tell whether the browser's copy or the server's copy is more recent —
-// without it, a slow/aborted Supabase write (e.g. a hard refresh right after
-// an edit) gets silently overwritten by the stale server copy on next load.
+// Local cache entries are wrapped with a `savedAt` timestamp (possibly null —
+// "unknown") so a reload can tell whether the browser's copy or the server's
+// copy is more recent — without it, a slow/aborted Supabase write (e.g. a
+// hard refresh right after an edit) gets silently overwritten by the stale
+// server copy on next load. `__v` distinguishes this wrapper from the legacy
+// unwrapped format so a null savedAt isn't mistaken for "not wrapped".
 function loadStoredEntry(storageKey) {
   const raw = localStorage.getItem(storageKey)
   if (!raw) return null
   try {
     const parsed = JSON.parse(raw)
-    if (parsed && typeof parsed === 'object' && parsed.savedAt && parsed.data && typeof parsed.data === 'object') {
-      return { data: parsed.data, savedAt: parsed.savedAt }
+    if (parsed && typeof parsed === 'object' && parsed.__v === 1 && parsed.data && typeof parsed.data === 'object') {
+      return { data: parsed.data, savedAt: parsed.savedAt ?? null }
     }
-    // Legacy (pre-timestamp) cache: still usable as data, just treat it as
-    // maximally stale so a real server record always wins the comparison.
+    // Legacy (pre-wrapper) cache: still usable as data, just treat it as
+    // "unknown age" so a real server record always wins the comparison.
     if (parsed && typeof parsed === 'object') {
       return { data: parsed, savedAt: null }
     }
@@ -86,7 +88,7 @@ function loadStoredEntry(storageKey) {
 }
 
 function saveStoredEntry(storageKey, data, savedAt = new Date().toISOString()) {
-  localStorage.setItem(storageKey, JSON.stringify({ data, savedAt }))
+  localStorage.setItem(storageKey, JSON.stringify({ __v: 1, data, savedAt: savedAt ?? null }))
 }
 
 export function usePersistedState(userId) {
@@ -125,9 +127,18 @@ export function usePersistedState(userId) {
     if (prevUserId === 'guest' && userId !== 'guest') {
       const userRaw = localStorage.getItem(storageKey)
       if (!userRaw) {
-        const guestRaw = localStorage.getItem('inji_state_guest')
-        if (guestRaw) {
-          localStorage.setItem(storageKey, guestRaw)
+        const guestEntry = loadStoredEntry('inji_state_guest')
+        if (guestEntry) {
+          // Carry the guest data over, but drop its savedAt: it was just
+          // stamped fresh by this same page load (the app always boots as
+          // 'guest' until auth resolves), not by a real edit under this
+          // account. Treating it as "newer than the server" would make a
+          // brand-new device wipe an existing account's real cloud data the
+          // moment someone logs in on it. The reconciliation below already
+          // treats an unknown savedAt as "defer to the server if it has
+          // anything", and still pushes this data up if the account is
+          // genuinely new (no server row yet).
+          saveStoredEntry(storageKey, guestEntry.data, null)
         }
       }
       localStorage.removeItem('inji_state_guest')
@@ -153,19 +164,29 @@ export function usePersistedState(userId) {
         if (!active) return
         persistenceReadyRef.current = !error
         if (!error) {
-          const serverUpdatedAt = data?.updated_at ? new Date(data.updated_at).getTime() : -1
-          const localSavedAt = savedAtRef.current ? new Date(savedAtRef.current).getTime() : -1
+          const hasServerRow = data?.data && typeof data.data === 'object'
+          const serverUpdatedAt = hasServerRow && data.updated_at ? new Date(data.updated_at).getTime() : null
+          const localSavedAt = savedAtRef.current ? new Date(savedAtRef.current).getTime() : null
 
-          if (data?.data && typeof data.data === 'object' && serverUpdatedAt > localSavedAt) {
-            // Server has a newer copy (e.g. edited from another device) — adopt it.
-            const nextState = buildState(data.data)
-            stateRef.current = nextState
-            savedAtRef.current = data.updated_at
-            saveStoredEntry(storageKey, nextState, data.updated_at)
-            setState(nextState)
-          } else if (localSavedAt > serverUpdatedAt) {
-            // Our local copy is newer than what the server has — a previous
-            // write likely never completed (e.g. refreshed mid-save). Re-send it.
+          if (hasServerRow) {
+            // An unknown local timestamp (e.g. a brand-new device, or guest
+            // data just migrated under this account) never outranks a real
+            // server record — only a *known-newer* local edit does.
+            const localIsNewer = localSavedAt !== null && (serverUpdatedAt === null || localSavedAt > serverUpdatedAt)
+            if (!localIsNewer) {
+              const nextState = buildState(data.data)
+              stateRef.current = nextState
+              savedAtRef.current = data.updated_at ?? null
+              saveStoredEntry(storageKey, nextState, data.updated_at ?? null)
+              setState(nextState)
+            } else {
+              // Our local copy is demonstrably newer — a previous write likely
+              // never completed (e.g. refreshed mid-save). Re-send it.
+              persistState(stateRef.current)
+            }
+          } else {
+            // No server row yet at all — first sync for this account. Push
+            // whatever we have locally (e.g. migrated guest progress) to seed it.
             persistState(stateRef.current)
           }
         }
