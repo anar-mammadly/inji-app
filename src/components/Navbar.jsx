@@ -11,6 +11,8 @@ import {
   Flame,
   Ellipsis,
   LogIn,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react'
 import { useTranslation } from '../i18n/LanguageContext'
 
@@ -93,9 +95,32 @@ function NavIcon({ icon: Icon, color, size = 22 }) {
   return <Icon size={size} strokeWidth={2.4} style={{ color }} />
 }
 
+const SIDEBAR_KEY = 'inji_sidebar_open'
+
+function readSidebarOpen() {
+  try {
+    return localStorage.getItem(SIDEBAR_KEY) !== '0'
+  } catch {
+    return true
+  }
+}
+
 export default function Navbar({ streakDays, page, onNavigate, user, onSignIn, profileName, profileAvatar }) {
   const { t } = useTranslation()
   const [moreOpen, setMoreOpen] = useState(false)
+  // desktop sidebar: open = icons + labels, closed = icons only (tablets are always icons only)
+  const [open, setOpen] = useState(readSidebarOpen)
+
+  function toggleSidebar() {
+    setOpen((v) => {
+      try {
+        localStorage.setItem(SIDEBAR_KEY, v ? '0' : '1')
+      } catch {
+        // storage unavailable — the toggle still works for this visit
+      }
+      return !v
+    })
+  }
 
   function go(id) {
     onNavigate(id)
@@ -105,15 +130,48 @@ export default function Navbar({ streakDays, page, onNavigate, user, onSignIn, p
   const accountLabel = profileName?.trim() || user?.email
   const activeItem = 'bg-blueSoft border-[#84D8FF] text-blueDark'
   const idleItem = 'border-transparent text-textSecondary hover:bg-surfaceAlt'
+  // classes that only apply when the desktop sidebar is open
+  const wide = (cls) => (open ? cls : '')
+  const ToggleIcon = open ? PanelLeftClose : PanelLeftOpen
+  const toggleLabel = open ? t('sidebarCollapse') : t('sidebarExpand')
 
   return (
     <>
-      {/* ── Desktop / tablet: side rail (icons on md, icons + labels on lg) ── */}
-      <aside className="hidden md:flex sticky top-0 h-dvh shrink-0 flex-col border-r-2 border-border bg-surface md:w-[84px] lg:w-[240px]">
-        <div className="flex h-[72px] items-center justify-center lg:justify-start lg:px-6">
-          <span className="lg:hidden"><Logo compact /></span>
-          <span className="hidden lg:inline"><Logo /></span>
+      {/* ── Desktop / tablet: side rail — collapsible on desktop ── */}
+      <aside
+        className={`hidden md:flex sticky top-0 h-dvh shrink-0 flex-col border-r-2 border-border bg-surface md:w-[84px] transition-[width] duration-200 ${
+          open ? 'lg:w-[240px]' : 'lg:w-[84px]'
+        }`}
+      >
+        <div className={`flex h-[72px] shrink-0 items-center justify-center gap-2 ${wide('lg:justify-between lg:pl-6 lg:pr-3')}`}>
+          <span className={wide('lg:hidden')}><Logo compact /></span>
+          <span className={`hidden ${wide('lg:inline')}`}><Logo /></span>
+          {open && (
+            <button
+              onClick={toggleSidebar}
+              title={toggleLabel}
+              aria-label={toggleLabel}
+              aria-expanded="true"
+              className="hidden lg:inline-flex h-9 w-9 items-center justify-center rounded-xl text-textMuted hover:bg-surfaceAlt hover:text-textSecondary"
+            >
+              <ToggleIcon size={20} strokeWidth={2.4} />
+            </button>
+          )}
         </div>
+
+        {!open && (
+          <div className="hidden lg:flex justify-center -mt-2 mb-2">
+            <button
+              onClick={toggleSidebar}
+              title={toggleLabel}
+              aria-label={toggleLabel}
+              aria-expanded="false"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border-2 border-border text-textMuted hover:bg-surfaceAlt hover:text-textSecondary"
+            >
+              <ToggleIcon size={18} strokeWidth={2.4} />
+            </button>
+          </div>
+        )}
 
         <nav className="flex-1 overflow-y-auto no-scrollbar px-3 flex flex-col gap-1.5">
           {NAV.map(({ id, icon, key, color }) => {
@@ -124,33 +182,33 @@ export default function Navbar({ streakDays, page, onNavigate, user, onSignIn, p
                 onClick={() => go(id)}
                 title={t(key)}
                 aria-current={active ? 'page' : undefined}
-                className={`flex items-center gap-3.5 h-12 rounded-2xl border-2 px-0 lg:px-3.5 justify-center lg:justify-start text-[15px] font-extrabold transition-colors ${
+                className={`flex items-center gap-3.5 h-12 shrink-0 rounded-2xl border-2 px-0 justify-center ${wide('lg:px-3.5 lg:justify-start')} text-[15px] font-extrabold transition-colors ${
                   active ? activeItem : idleItem
                 }`}
               >
                 <NavIcon icon={icon} color={color} />
-                <span className="hidden lg:inline">{t(key)}</span>
+                <span className={`hidden whitespace-nowrap ${wide('lg:inline')}`}>{t(key)}</span>
               </button>
             )
           })}
         </nav>
 
         <div className="px-3 pb-4 pt-3 flex flex-col gap-3 border-t-2 border-border">
-          <div className="flex justify-center lg:justify-start lg:px-3">
-            <span className="lg:hidden"><Streak streakDays={streakDays} compact /></span>
-            <span className="hidden lg:inline"><Streak streakDays={streakDays} /></span>
+          <div className={`flex justify-center ${wide('lg:justify-start lg:px-3')}`}>
+            <span className={wide('lg:hidden')}><Streak streakDays={streakDays} compact /></span>
+            <span className={`hidden ${wide('lg:inline')}`}><Streak streakDays={streakDays} /></span>
           </div>
-          <LangToggle className="self-center lg:self-start lg:ml-3" />
+          <LangToggle className={`self-center ${wide('lg:self-start lg:ml-3')}`} />
           {user ? (
             <button
               onClick={() => go('profile')}
-              className={`flex items-center gap-2.5 rounded-2xl border-2 p-1.5 lg:px-2.5 justify-center lg:justify-start transition-colors ${
+              className={`flex items-center gap-2.5 rounded-2xl border-2 p-1.5 justify-center ${wide('lg:px-2.5 lg:justify-start')} transition-colors ${
                 page === 'profile' ? activeItem : idleItem
               }`}
               title={accountLabel}
             >
               <Avatar user={user} profileName={profileName} profileAvatar={profileAvatar} />
-              <span className="hidden lg:block min-w-0 truncate text-[13px] font-extrabold">{accountLabel}</span>
+              <span className={`hidden min-w-0 truncate text-[13px] font-extrabold ${wide('lg:block')}`}>{accountLabel}</span>
             </button>
           ) : (
             <button
@@ -159,7 +217,7 @@ export default function Navbar({ streakDays, page, onNavigate, user, onSignIn, p
               title={t('authLoginButton')}
             >
               <LogIn size={18} strokeWidth={2.5} />
-              <span className="hidden lg:inline">{t('authLoginButton')}</span>
+              <span className={`hidden whitespace-nowrap ${wide('lg:inline')}`}>{t('authLoginButton')}</span>
             </button>
           )}
         </div>
