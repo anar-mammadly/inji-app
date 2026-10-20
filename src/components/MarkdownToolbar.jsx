@@ -38,24 +38,17 @@ export default function MarkdownToolbar({ textareaRef, value, setValue }) {
     insertWrap(textareaRef, value, setValue, '\n```js\n', '\n```\n', 'kod...')
   }
 
+  const btn =
+    'inline-flex items-center gap-1.5 h-8 px-2.5 rounded-xl border-2 border-border bg-white text-[12px] font-bold text-textSecondary transition-colors hover:border-blue hover:bg-blueSoft hover:text-blueDark'
+
   return (
-    <div className="flex items-center gap-1.5 mb-1.5">
-      <button
-        type="button"
-        onClick={insertBullet}
-        className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border-2 border-border text-textMuted hover:border-accent hover:text-accent transition-colors"
-        aria-label={t('insertBullet')}
-      >
-        <List size={12} strokeWidth={2.5} />
+    <div className="flex flex-wrap items-center gap-2 mb-2">
+      <button type="button" onClick={insertBullet} className={btn} aria-label={t('insertBullet')}>
+        <List size={14} strokeWidth={2.5} />
         {t('insertBullet')}
       </button>
-      <button
-        type="button"
-        onClick={insertCodeBlock}
-        className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border-2 border-border text-textMuted hover:border-accent hover:text-accent transition-colors"
-        aria-label={t('insertCodeBlock')}
-      >
-        <Code2 size={12} strokeWidth={2.5} />
+      <button type="button" onClick={insertCodeBlock} className={btn} aria-label={t('insertCodeBlock')}>
+        <Code2 size={14} strokeWidth={2.5} />
         {t('insertCodeBlock')}
       </button>
     </div>

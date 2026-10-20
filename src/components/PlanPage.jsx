@@ -1,9 +1,13 @@
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, Target } from 'lucide-react'
 import { useTranslation } from '../i18n/LanguageContext'
 import PlanDayCard from './PlanDayCard'
 import PlanGoalCard from './PlanGoalCard'
 import Button from './ui/Button'
+import Card from './ui/Card'
+import Page from './ui/Page'
+import PageHeader from './ui/PageHeader'
+import { inputClass, labelClass } from './ui/styles'
 
 function AddGoalForm({ onAdd, onCancel }) {
   const { t } = useTranslation()
@@ -19,46 +23,50 @@ function AddGoalForm({ onAdd, onCancel }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="p-3 rounded-2xl border-2 border-border bg-surface flex flex-col gap-2 mb-4">
+    <Card as="form" onSubmit={handleSubmit} className="flex flex-col gap-3 mb-4">
       <input
         autoFocus
         type="text"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder={t('goalTitlePlaceholder')}
-        className="px-3 py-1.5 text-[13px] font-semibold rounded-xl border-2 border-border outline-none focus:border-accent"
+        className={inputClass}
       />
-      <div className="flex gap-2">
+      <div className="grid grid-cols-[96px_minmax(0,1fr)] sm:grid-cols-[110px_minmax(0,1fr)_180px] gap-2">
         <input
           type="number"
           min="1"
           value={targetProgress}
           onChange={(e) => setTargetProgress(e.target.value)}
-          className="w-20 px-2 py-1.5 text-[12px] font-bold rounded-xl border-2 border-border outline-none"
+          className={`${inputClass} tabular-nums`}
         />
         <input
           type="text"
           value={unit}
           onChange={(e) => setUnit(e.target.value)}
           placeholder={t('unitPlaceholder')}
-          className="flex-1 px-2 py-1.5 text-[12px] font-bold rounded-xl border-2 border-border outline-none"
+          className={inputClass}
         />
-        <input
-          type="date"
-          value={targetDate}
-          onChange={(e) => setTargetDate(e.target.value)}
-          className="px-2 py-1.5 text-[12px] font-bold rounded-xl border-2 border-border outline-none"
-        />
+        <div className="col-span-2 sm:col-span-1">
+          <label className={`${labelClass} sm:sr-only`}>{t('goalsDeadline')}</label>
+          <input
+            type="date"
+            value={targetDate}
+            onChange={(e) => setTargetDate(e.target.value)}
+            aria-label={t('goalsDeadline')}
+            className={inputClass}
+          />
+        </div>
       </div>
       <div className="flex gap-2">
-        <Button type="submit" size="sm" className="flex-1">
+        <Button type="submit" size="sm" className="flex-1 sm:flex-none sm:min-w-[120px]">
           {t('add')}
         </Button>
-        <Button type="button" size="sm" variant="secondary" onClick={onCancel} className="flex-1">
+        <Button type="button" size="sm" variant="secondary" onClick={onCancel} className="flex-1 sm:flex-none sm:min-w-[120px]">
           {t('cancel')}
         </Button>
       </div>
-    </form>
+    </Card>
   )
 }
 
@@ -79,13 +87,10 @@ export default function PlanPage({
   const [addingGoal, setAddingGoal] = useState(false)
 
   return (
-    <div className="flex-1 px-4 sm:px-6 py-6 sm:py-8 max-w-[980px] mx-auto w-full overflow-x-hidden">
-      <div className="mb-5">
-        <h1 className="text-xl font-extrabold text-textPrimary">{t('planWeekTitle')}</h1>
-        <p className="text-[12px] font-semibold text-textMuted mt-0.5">{t('planWeekSubtitle')}</p>
-      </div>
+    <Page width="normal">
+      <PageHeader title={t('planWeekTitle')} subtitle={t('planWeekSubtitle')} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {planDays.map((day) => (
           <PlanDayCard
             key={day.id}
@@ -100,38 +105,54 @@ export default function PlanPage({
         ))}
       </div>
 
-      <div className="flex items-center justify-between mt-9 mb-4 pt-5 border-t border-border">
-        <h2 className="text-lg font-extrabold text-textPrimary">{t('planGoalsTitle')}</h2>
-        <button
-          onClick={() => setAddingGoal((a) => !a)}
-          className="flex items-center gap-1 text-[12px] font-extrabold text-accent"
-        >
-          <Plus size={16} strokeWidth={3} />
-          {t('addGoal')}
-        </button>
-      </div>
+      <section className="mt-10">
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <h2 className="flex items-center gap-2 text-[20px] font-extrabold text-textPrimary">
+            <Target size={20} strokeWidth={2.6} className="text-purple" />
+            {t('planGoalsTitle')}
+          </h2>
+          {!addingGoal && (
+            <Button size="sm" onClick={() => setAddingGoal(true)}>
+              <Plus size={16} strokeWidth={3} />
+              {t('addGoal')}
+            </Button>
+          )}
+        </div>
 
-      {addingGoal && (
-        <AddGoalForm
-          onAdd={(data) => {
-            onAddGoal(data)
-            setAddingGoal(false)
-          }}
-          onCancel={() => setAddingGoal(false)}
-        />
-      )}
-
-      <div className="flex flex-col gap-3">
-        {planGoals.map((goal) => (
-          <PlanGoalCard
-            key={goal.id}
-            goal={goal}
-            onUpdateProgress={(v) => onUpdateGoalProgress(goal.id, v)}
-            onDelete={() => onDeleteGoal(goal.id)}
+        {addingGoal && (
+          <AddGoalForm
+            onAdd={(data) => {
+              onAddGoal(data)
+              setAddingGoal(false)
+            }}
+            onCancel={() => setAddingGoal(false)}
           />
-        ))}
-        {planGoals.length === 0 && <div className="text-sm font-bold text-textMuted">{t('planNoGoals')}</div>}
-      </div>
-    </div>
+        )}
+
+        {planGoals.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {planGoals.map((goal) => (
+              <PlanGoalCard
+                key={goal.id}
+                goal={goal}
+                onUpdateProgress={(v) => onUpdateGoalProgress(goal.id, v)}
+                onDelete={() => onDeleteGoal(goal.id)}
+              />
+            ))}
+          </div>
+        ) : (
+          !addingGoal && (
+            <Card className="flex flex-col items-center justify-center gap-3 py-10 text-center">
+              <Target size={34} strokeWidth={2.2} className="text-purple" />
+              <p className="text-[15px] font-bold text-textSecondary">{t('planNoGoals')}</p>
+              <Button size="sm" variant="soft" onClick={() => setAddingGoal(true)}>
+                <Plus size={16} strokeWidth={3} />
+                {t('addGoal')}
+              </Button>
+            </Card>
+          )
+        )}
+      </section>
+    </Page>
   )
 }

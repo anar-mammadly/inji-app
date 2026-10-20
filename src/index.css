@@ -2,29 +2,56 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  /* scrollable without a visible bar (the bar would eat into narrow sidebars) */
+  .no-scrollbar { scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+
+  /* bottom padding that clears the mobile tab bar + the home indicator */
+  .pb-tabbar { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+}
+
+@layer components {
+  /* headings: heavy and friendly */
+  .font-display {
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+
+  /* a glossy green bead (logo, completed markers) */
+  .nacre {
+    background:
+      radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.85) 0 16%, transparent 42%),
+      #58cc02;
+  }
+
+  /* chunky 3D press: the element sinks onto its bottom shadow */
+  .press {
+    transition: transform 80ms ease, box-shadow 80ms ease;
+  }
+  .press:active:not(:disabled) {
+    transform: translateY(3px);
+    box-shadow: none !important;
+  }
+}
+
 * {
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
 }
 
-:root {
-  --font-sans: 'Inter', sans-serif;
-}
-
-html[lang='en'] {
-  --font-sans: 'Bricolage Grotesque', 'Inter', sans-serif;
-}
-
 html,
 body {
   margin: 0;
-  font-family: var(--font-sans);
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-weight: 500;
   font-size: 14px;
-  line-height: 1.6;
-  color: #2c2c2a;
-  background: #f9f7f4;
+  line-height: 1.5;
+  color: #3c3c3c;
+  background: #f7f9fb;
   overscroll-behavior-y: none;
   -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
 }
 
 #root {
@@ -37,22 +64,41 @@ a {
   touch-action: manipulation;
 }
 
-.no-scrollbar {
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+::selection {
+  background: #dffab8;
 }
 
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
+/* Visible keyboard focus everywhere; mouse/touch clicks stay clean */
+:focus-visible {
+  outline: 2px solid #1cb0f6;
+  outline-offset: 2px;
+  border-radius: 8px;
 }
 
-/* Prevent iOS Safari from auto-zooming on input focus.
-   Must use !important — Tailwind utility classes have higher specificity
-   than element selectors and would otherwise override this. */
-input,
-select,
-textarea {
-  font-size: 16px !important;
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+
+/* Prevent iOS Safari from auto-zooming on input focus (touch devices only —
+   on desktop the designed sizes apply). !important beats Tailwind utilities. */
+@media (pointer: coarse) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 @keyframes ptr-spin {
@@ -64,6 +110,5 @@ textarea {
   #root {
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
-    padding-bottom: env(safe-area-inset-bottom);
   }
 }

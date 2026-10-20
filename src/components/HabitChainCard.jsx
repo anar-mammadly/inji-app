@@ -1,8 +1,17 @@
 import { useState } from 'react'
 import { Flame, X, PartyPopper, Plus, Pencil } from 'lucide-react'
-import { addDays, format, parseISO } from 'date-fns'
+import { addDays, format, parseISO, subDays } from 'date-fns'
 import { useTranslation } from '../i18n/LanguageContext'
 import HabitChainLinks from './HabitChainLinks'
+import Card from './ui/Card'
+import Button from './ui/Button'
+import ProgressBar from './ui/ProgressBar'
+import { inputClass, chipClass, iconButtonClass } from './ui/styles'
+
+// soft tint of the habit's own color for badges / chips
+function tint(color, alpha = '22') {
+  return /^#[0-9a-f]{6}$/i.test(color) ? `${color}${alpha}` : '#F1F4F9'
+}
 
 export default function HabitChainCard({ habit, log, onToggleToday, onToggleDay, onDelete, onEdit, onAddOption, onDeleteOption }) {
   const { t } = useTranslation()
@@ -18,10 +27,15 @@ export default function HabitChainCard({ habit, log, onToggleToday, onToggleDay,
   const targetDays = habit.targetDays || 30
   const startDate = habit.startDate || todayKey
   const subOptions = habit.subOptions || []
+  const color = habit.color || '#FF4B4B'
   const filledCount = Array.from({ length: targetDays }, (_, i) => format(addDays(parseISO(startDate), i), 'yyyy-MM-dd')).filter(
     (key) => !!log[key],
   ).length
   const isComplete = filledCount >= targetDays
+
+  // current run of consecutive done days, ending today (or yesterday while today is still open)
+  let streak = 0
+  for (let d = doneToday ? new Date() : subDays(new Date(), 1); log[format(d, 'yyyy-MM-dd')]; d = subDays(d, 1)) streak++
 
   function handleChainToggle(dateISO) {
     if (dateISO === todayKey) {
@@ -75,8 +89,33 @@ export default function HabitChainCard({ habit, log, onToggleToday, onToggleDay,
   }
 
   return (
-    <div className="rounded-3xl border-2 border-border bg-surface p-4">
-      <div className="flex items-start justify-between gap-2 mb-3">
+    <Card className="min-w-0 flex flex-col gap-3">
+      <div className="flex items-start gap-3">
+        {/* streak badge */}
+        <div
+          className="shrink-0 flex flex-col items-center justify-center h-12 w-12 rounded-2xl"
+          style={{ background: isComplete ? '#DFFAB8' : streak > 0 ? '#FFE8CC' : '#F1F4F9' }}
+          title={t('streak', { n: streak })}
+        >
+          {isComplete ? (
+            <PartyPopper size={20} strokeWidth={2.5} className="text-accentDark" />
+          ) : (
+            <Flame
+              size={20}
+              strokeWidth={2.5}
+              className={streak > 0 ? 'text-orange' : 'text-borderStrong'}
+              fill={streak > 0 ? '#FFC800' : 'none'}
+            />
+          )}
+          <span
+            className={`text-[12px] leading-none font-extrabold tabular-nums mt-0.5 ${
+              isComplete ? 'text-accentDark' : streak > 0 ? 'text-orangeDark' : 'text-textMuted'
+            }`}
+          >
+            {isComplete ? filledCount : streak}
+          </span>
+        </div>
+
         <div className="flex-1 min-w-0">
           {editingName ? (
             <input
@@ -88,38 +127,48 @@ export default function HabitChainCard({ habit, log, onToggleToday, onToggleDay,
                 else if (e.key === 'Escape') setEditingName(false)
               }}
               onBlur={commitName}
-              className="text-[15px] font-extrabold text-textPrimary outline-none bg-transparent border-b-2 border-accent w-full"
+              className="w-full h-8 text-[17px] font-extrabold text-textPrimary outline-none bg-transparent border-b-2 border-blue"
             />
           ) : (
-            <div className="flex items-center gap-1.5">
-              <div className="text-[15px] font-extrabold text-textPrimary truncate">{displayName}</div>
-              <button
-                onClick={startEditingName}
-                className="shrink-0 text-textMuted hover:text-textSecondary transition-colors"
-                aria-label={t('editHabit')}
-              >
-                <Pencil size={12} strokeWidth={2.5} />
+            <div className="flex items-center gap-1 min-w-0">
+              <h2 className="text-[17px] leading-8 font-extrabold text-textPrimary truncate">{displayName}</h2>
+              <button onClick={startEditingName} className={`${iconButtonClass} shrink-0 !h-7 !w-7`} aria-label={t('editHabit')}>
+                <Pencil size={13} strokeWidth={2.5} />
               </button>
             </div>
           )}
-          <div className="flex items-center gap-1 text-[12px] font-bold mt-0.5" style={{ color: isComplete ? '#58CC02' : '#FF9600' }}>
-            {isComplete ? <PartyPopper size={13} /> : <Flame size={13} fill="#FF9600" />}
-            {isComplete ? t('challengeComplete') : t('challengeProgress', { done: filledCount, total: targetDays })}
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            <span
+              className={chipClass}
+              style={isComplete ? { background: '#DFFAB8', color: '#46A302' } : { background: tint(color), color: '#3C3C3C' }}
+            >
+              {isComplete ? t('challengeComplete') : t('challengeProgress', { done: filledCount, total: targetDays })}
+            </span>
+            {streak > 0 && !isComplete && (
+              <span className={`${chipClass} bg-orangeSoft text-orangeDark`}>{t('streak', { n: streak })}</span>
+            )}
           </div>
         </div>
-        <button onClick={onDelete} className="text-textMuted hover:text-coral transition-colors shrink-0" aria-label={t('deleteHabit')}>
-          <X size={15} strokeWidth={2.5} />
+
+        <button
+          onClick={onDelete}
+          className={`${iconButtonClass} shrink-0 -mr-1 hover:!bg-pomSoft hover:!text-coral`}
+          aria-label={t('deleteHabit')}
+        >
+          <X size={16} strokeWidth={2.5} />
         </button>
       </div>
 
+      <ProgressBar value={filledCount} max={targetDays} color={isComplete ? '#58CC02' : color} height={10} />
+
       {picking && (
-        <div className="mb-3 p-3 rounded-2xl bg-surfaceAlt flex flex-col gap-2">
-          <div className="flex flex-wrap gap-1.5">
+        <div className="p-3 rounded-2xl border-2 border-border bg-surfaceAlt flex flex-col gap-3">
+          <div className="flex flex-wrap gap-2">
             {subOptions.map((opt) => (
-              <div key={opt} className="group relative">
+              <div key={opt} className="relative max-w-full">
                 <button
                   onClick={() => confirmOption(opt)}
-                  className="px-3 py-1.5 pr-6 rounded-xl text-[12px] font-bold border-2 border-border bg-surface text-textSecondary hover:bg-accentSoft hover:text-accentDark hover:border-accent transition-colors"
+                  className="press max-w-full truncate h-9 pl-3.5 pr-8 rounded-xl text-[13px] font-bold border-2 border-border bg-white text-textPrimary shadow-[0_3px_0_#E5E7EB] hover:border-accent hover:bg-accentSoft hover:text-accentDark transition-colors"
                 >
                   {opt}
                 </button>
@@ -129,66 +178,58 @@ export default function HabitChainCard({ habit, log, onToggleToday, onToggleDay,
                     onDeleteOption(opt)
                   }}
                   aria-label={t('deleteOption')}
-                  className="absolute top-1/2 right-1.5 -translate-y-1/2 flex items-center justify-center rounded-full text-textMuted hover:text-coral hover:bg-bg transition-colors"
-                  style={{ width: 16, height: 16 }}
+                  className="absolute top-1/2 right-1.5 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-lg text-textMuted hover:text-coral hover:bg-pomSoft transition-colors"
                 >
-                  <X size={10} strokeWidth={2.5} />
+                  <X size={12} strokeWidth={2.5} />
                 </button>
               </div>
             ))}
 
             {addingOption ? (
-              <div className="flex items-center gap-1">
-                <input
-                  autoFocus
-                  type="text"
-                  value={newOption}
-                  onChange={(e) => setNewOption(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && submitNewOption()}
-                  onBlur={() => !newOption.trim() && setAddingOption(false)}
-                  placeholder={t('newOptionPlaceholder')}
-                  className="w-28 px-2 py-1.5 text-[12px] font-semibold rounded-xl border-2 border-accent outline-none"
-                />
-              </div>
+              <input
+                autoFocus
+                type="text"
+                value={newOption}
+                onChange={(e) => setNewOption(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && submitNewOption()}
+                onBlur={() => !newOption.trim() && setAddingOption(false)}
+                placeholder={t('newOptionPlaceholder')}
+                className="w-36 h-9 px-3 rounded-xl border-2 border-blue bg-white text-[13px] font-semibold text-textPrimary placeholder:text-textMuted outline-none"
+              />
             ) : (
               <button
                 onClick={() => setAddingOption(true)}
-                className="px-2.5 py-1.5 rounded-xl text-[12px] font-bold border-2 border-dashed border-borderStrong text-textMuted hover:border-accent hover:text-accent transition-colors flex items-center gap-1"
+                className="h-9 px-3 rounded-xl text-[13px] font-bold border-2 border-dashed border-borderStrong text-textMuted hover:border-accent hover:text-accentDark transition-colors flex items-center gap-1"
               >
-                <Plus size={12} strokeWidth={3} />
+                <Plus size={14} strokeWidth={3} />
                 {t('addOption')}
               </button>
             )}
           </div>
-          <div className="flex gap-1.5">
+          <div className="flex gap-2">
             <input
               type="text"
               value={note}
               onChange={(e) => setNote(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && confirmFreeText()}
               placeholder={t('sportFreeTextPlaceholder')}
-              className="flex-1 px-2.5 py-1.5 text-[12px] font-semibold rounded-xl border-2 border-border outline-none"
+              className={`${inputClass} flex-1 min-w-0`}
             />
-            <button onClick={() => setPicking(false)} className="text-[11px] font-bold text-textMuted px-1">
+            <Button variant="ghost" onClick={() => setPicking(false)} className="shrink-0 !px-3">
               {t('cancel')}
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       {todayNote && (
-        <div className="text-[11px] font-bold text-textMuted mb-2">
-          {t('todayNote')}: {todayNote}
+        <div className="flex items-center gap-1.5 min-w-0 text-[13px] font-medium text-textSecondary">
+          <span className={`${chipClass} shrink-0 bg-accentSoft text-accentDark`}>{t('todayNote')}</span>
+          <span className="truncate">{todayNote}</span>
         </div>
       )}
 
-      <HabitChainLinks
-        startDate={startDate}
-        targetDays={targetDays}
-        log={log}
-        color={habit.color || '#FF4B4B'}
-        onToggleDay={handleChainToggle}
-      />
-    </div>
+      <HabitChainLinks startDate={startDate} targetDays={targetDays} log={log} color={color} onToggleDay={handleChainToggle} />
+    </Card>
   )
 }

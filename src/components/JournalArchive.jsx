@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react'
 import { format, parseISO } from 'date-fns'
-import { Pencil, X } from 'lucide-react'
+import { Pencil, X, CalendarDays, BookMarked } from 'lucide-react'
 import { useTranslation } from '../i18n/LanguageContext'
 import Button from './ui/Button'
+import Card from './ui/Card'
+import { chipClass, iconButtonClass, textareaClass } from './ui/styles'
 import MarkdownToolbar from './MarkdownToolbar'
 import MarkdownContent from './MarkdownContent'
 
@@ -19,8 +21,8 @@ function ArchiveItem({ entry, onEdit, onDelete }) {
   }
 
   return (
-    <div className="flex items-start gap-2.5 group">
-      <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-purple shrink-0" />
+    <div className="flex items-start gap-3">
+      <span className="mt-[9px] h-2.5 w-2.5 rounded-full bg-purple shrink-0" />
       <div className="flex-1 min-w-0">
         {editing ? (
           <div>
@@ -37,9 +39,9 @@ function ArchiveItem({ entry, onEdit, onDelete }) {
                 }
               }}
               rows={4}
-              className="w-full text-[13px] font-semibold text-textPrimary outline-none bg-surfaceAlt border-2 border-accent rounded-xl px-2.5 py-2 resize-none font-mono"
+              className={`${textareaClass} font-mono text-[13px] !border-blue`}
             />
-            <div className="flex justify-end mt-1.5">
+            <div className="flex justify-end mt-2">
               <Button size="sm" onClick={commit}>
                 {t('save')}
               </Button>
@@ -50,16 +52,16 @@ function ArchiveItem({ entry, onEdit, onDelete }) {
         )}
       </div>
       {!editing && (
-        <div className="flex items-center gap-1.5 shrink-0">
-          <button
-            onClick={() => setEditing(true)}
-            className="text-textMuted hover:text-textSecondary transition-colors"
-            aria-label={t('editEntry')}
-          >
-            <Pencil size={12} strokeWidth={2.5} />
+        <div className="-mt-0.5 -mr-1.5 flex items-center shrink-0">
+          <button onClick={() => setEditing(true)} className={iconButtonClass} aria-label={t('editEntry')}>
+            <Pencil size={14} strokeWidth={2.5} />
           </button>
-          <button onClick={onDelete} className="text-textMuted hover:text-coral transition-colors" aria-label={t('deleteEntry')}>
-            <X size={13} strokeWidth={2.5} />
+          <button
+            onClick={onDelete}
+            className={`${iconButtonClass} hover:!bg-pomSoft hover:!text-coral`}
+            aria-label={t('deleteEntry')}
+          >
+            <X size={16} strokeWidth={2.6} />
           </button>
         </div>
       )}
@@ -71,7 +73,12 @@ export default function JournalArchive({ entries, onEdit, onDelete }) {
   const { t } = useTranslation()
 
   if (entries.length === 0) {
-    return <div className="text-sm font-bold text-textMuted">{t('noJournalEntries')}</div>
+    return (
+      <div className="flex items-center gap-3 rounded-3xl border-2 border-dashed border-borderStrong px-4 py-5">
+        <BookMarked size={22} strokeWidth={2.5} className="shrink-0 text-purple" />
+        <p className="text-[14px] font-bold text-textMuted">{t('noJournalEntries')}</p>
+      </div>
+    )
   }
 
   const groups = {}
@@ -84,11 +91,14 @@ export default function JournalArchive({ entries, onEdit, onDelete }) {
   return (
     <div className="flex flex-col gap-3">
       {dates.map((date) => (
-        <div key={date} className="rounded-2xl border-2 border-border bg-surface p-3.5">
-          <div className="text-[11px] font-extrabold uppercase tracking-wide text-textMuted mb-2">
-            {format(parseISO(date), 'd MMMM yyyy')}
+        <Card key={date}>
+          <div className="mb-3">
+            <span className={`${chipClass} h-7 px-3 text-[13px] bg-purpleSoft text-purpleDark`}>
+              <CalendarDays size={14} strokeWidth={2.5} />
+              {format(parseISO(date), 'd MMMM yyyy')}
+            </span>
           </div>
-          <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col gap-3 divide-y-2 divide-surfaceAlt [&>*:not(:first-child)]:pt-3">
             {groups[date]
               .slice()
               .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
@@ -101,7 +111,7 @@ export default function JournalArchive({ entries, onEdit, onDelete }) {
                 />
               ))}
           </div>
-        </div>
+        </Card>
       ))}
     </div>
   )

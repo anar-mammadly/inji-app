@@ -28,10 +28,20 @@ import { usePlanStore } from './hooks/usePlanStore'
 import { useReminders } from './hooks/useReminders'
 import { useProfile } from './hooks/useProfile'
 import { useAuth } from './contexts/AuthContext'
-import { beadColors } from './utils/colors'
+import { beadColors, colors } from './utils/colors'
+import { pearlBackground } from './components/Jar'
+import { formatBakuDay } from './utils/bakuDate'
+import { useBakuClock } from './hooks/useBakuClock'
 import { scheduleDropSound, playBeadBreakSound } from './utils/sound'
 import { authErrorMessage } from './utils/authErrors'
 import { useTranslation } from './i18n/LanguageContext'
+
+// isolated so the clock's per-second tick doesn't re-render the whole app
+function BakuToday() {
+  const { lang } = useTranslation()
+  const now = useBakuClock()
+  return formatBakuDay(lang, now)
+}
 
 export default function App() {
   const { user, loading, signOut, passwordRecovery, linkError, clearLinkError } = useAuth()
@@ -211,7 +221,7 @@ export default function App() {
   const boardTasks = tasks.filter((t) => t.boardId === activeBoardId)
 
   return (
-    <div className="min-h-dvh flex flex-col bg-bg">
+    <div className="min-h-dvh bg-bg md:flex">
       <PullToRefreshIndicator pullY={pullY} refreshing={refreshing} />
       <Navbar
         streakDays={streakDays}
@@ -224,86 +234,107 @@ export default function App() {
         profileAvatar={profile.avatar_url}
       />
 
-      {page === 'profile' ? (
-        <ProfilePage userId={userId} userEmail={user?.email} onSignOut={signOut} />
-      ) : page === 'stats' ? (
-        <StatsPage categoryCounts={categoryCounts} completedTasks={completedTasks} onResetStats={resetStats} boards={boards} tasks={tasks} />
-      ) : page === 'habits' ? (
-        <HabitsPage
-          habits={habits}
-          habitLog={habitLog}
-          onAddHabit={addHabit}
-          onEditHabit={editHabit}
-          onDeleteHabit={deleteHabit}
-          onToggleToday={toggleHabitToday}
-          onToggleDay={toggleHabitDay}
-          onAddOption={addHabitOption}
-          onDeleteOption={deleteHabitOption}
-        />
-      ) : page === 'learning' ? (
-        <LearningPage
-          learningGoals={learningGoals}
-          journalEntries={journalEntries}
-          onAddGoal={addLearningGoal}
-          onUpdateProgress={updateProgress}
-          onSetReminder={setReminderInterval}
-          onDeleteGoal={deleteLearningGoal}
-          onAddJournalEntry={addJournalEntry}
-          onEditJournalEntry={editJournalEntry}
-          onDeleteJournalEntry={deleteJournalEntry}
-        />
-      ) : page === 'calendar' ? (
-        <CalendarPage
-          events={events}
-          onAddEvent={addEvent}
-          onEditEvent={editEvent}
-          onDeleteEvent={deleteEvent}
-          onToggleEventDone={toggleEventDone}
-        />
-      ) : page === 'plan' ? (
-        <PlanPage
-          planDays={planDays}
-          planGoals={planGoals}
-          onSetDayTitle={setDayTitle}
-          onAddTodo={addTodo}
-          onToggleTodo={toggleTodo}
-          onEditTodo={editTodo}
-          onSetTodoTime={setTodoTime}
-          onDeleteTodo={deleteTodo}
-          onAddGoal={addGoal}
-          onUpdateGoalProgress={updateGoalProgress}
-          onDeleteGoal={deleteGoal}
-        />
-      ) : page === 'notes' ? (
-        <NotesPage
-          notes={notes}
-          onAddNote={addNote}
-          onEditNote={editNote}
-          onDeleteNote={deleteNote}
-        />
-      ) : (
-        <div className="flex flex-col flex-1">
-          <BoardSwitcher
-            boards={boards}
-            activeBoardId={activeBoardId}
-            onSelect={setActiveBoardId}
-            onAddBoard={addBoard}
-            onDeleteBoard={handleDeleteBoard}
+      {/* on tablet/desktop the board fits the window; its panels scroll inside */}
+      <main className={`flex-1 min-w-0 flex flex-col pb-tabbar md:pb-0 ${page === 'board' ? 'md:h-dvh md:overflow-hidden' : ''}`}>
+        {page === 'profile' ? (
+          <ProfilePage userId={userId} userEmail={user?.email} onSignOut={signOut} />
+        ) : page === 'stats' ? (
+          <StatsPage categoryCounts={categoryCounts} completedTasks={completedTasks} onResetStats={resetStats} boards={boards} tasks={tasks} />
+        ) : page === 'habits' ? (
+          <HabitsPage
+            habits={habits}
+            habitLog={habitLog}
+            onAddHabit={addHabit}
+            onEditHabit={editHabit}
+            onDeleteHabit={deleteHabit}
+            onToggleToday={toggleHabitToday}
+            onToggleDay={toggleHabitDay}
+            onAddOption={addHabitOption}
+            onDeleteOption={deleteHabitOption}
           />
-
-          <div className="flex flex-col sm:flex-row flex-1">
-            <div className="flex flex-col items-center pt-6 px-4 pb-4 sm:pb-0 border-b sm:border-b-0 sm:border-r border-border w-full sm:w-[220px] shrink-0 bg-bg">
-              <Jar beadCount={beadCount} jarRef={jarRef} onReset={resetJar} />
-              <Stats
-                beadCount={beadCount}
-                weeklyCount={weeklyCount}
-                dailyGoal={dailyGoal}
-                weeklyGoal={weeklyGoal}
-                onSetDailyGoal={setDailyGoal}
-                onSetWeeklyGoal={setWeeklyGoal}
-                onResetWeeklyGoal={resetWeeklyGoal}
+        ) : page === 'learning' ? (
+          <LearningPage
+            learningGoals={learningGoals}
+            journalEntries={journalEntries}
+            onAddGoal={addLearningGoal}
+            onUpdateProgress={updateProgress}
+            onSetReminder={setReminderInterval}
+            onDeleteGoal={deleteLearningGoal}
+            onAddJournalEntry={addJournalEntry}
+            onEditJournalEntry={editJournalEntry}
+            onDeleteJournalEntry={deleteJournalEntry}
+          />
+        ) : page === 'calendar' ? (
+          <CalendarPage
+            events={events}
+            onAddEvent={addEvent}
+            onEditEvent={editEvent}
+            onDeleteEvent={deleteEvent}
+            onToggleEventDone={toggleEventDone}
+          />
+        ) : page === 'plan' ? (
+          <PlanPage
+            planDays={planDays}
+            planGoals={planGoals}
+            onSetDayTitle={setDayTitle}
+            onAddTodo={addTodo}
+            onToggleTodo={toggleTodo}
+            onEditTodo={editTodo}
+            onSetTodoTime={setTodoTime}
+            onDeleteTodo={deleteTodo}
+            onAddGoal={addGoal}
+            onUpdateGoalProgress={updateGoalProgress}
+            onDeleteGoal={deleteGoal}
+          />
+        ) : page === 'notes' ? (
+          <NotesPage
+            notes={notes}
+            onAddNote={addNote}
+            onEditNote={editNote}
+            onDeleteNote={deleteNote}
+          />
+        ) : (
+          <div className="flex-1 md:min-h-0 flex flex-col w-full max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 pt-5 md:pt-7 pb-5 md:pb-6">
+            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3 mb-4 md:mb-5">
+              <div>
+                <h1 className="font-display text-[26px] sm:text-[30px] leading-tight text-textPrimary">{t('navBoard')}</h1>
+                <p className="mt-0.5 text-[14px] font-bold text-textMuted"><BakuToday /></p>
+              </div>
+              <BoardSwitcher
+                boards={boards}
+                activeBoardId={activeBoardId}
+                onSelect={setActiveBoardId}
+                onAddBoard={addBoard}
+                onDeleteBoard={handleDeleteBoard}
               />
-              <div className="w-full mt-3">
+            </div>
+
+            {/* phones: today → columns → timer · tablet: today | timer over columns · desktop: today + timer beside columns */}
+            <div className="flex-1 md:min-h-0 flex flex-col gap-3 md:grid md:grid-cols-[minmax(0,1fr)_minmax(280px,340px)] md:grid-rows-[auto_minmax(0,1fr)] lg:grid-cols-[288px_minmax(0,1fr)] lg:gap-x-6 lg:gap-y-3">
+              <section
+                aria-label={t('todayPanel')}
+                className="rounded-3xl bg-surface border-2 border-border p-4 sm:p-5 flex flex-col sm:flex-row lg:flex-col gap-5 sm:items-center lg:items-stretch md:col-start-1 md:row-start-1"
+              >
+                <Jar beadCount={beadCount} jarRef={jarRef} onReset={resetJar} />
+                <div className="hidden sm:block lg:hidden w-0.5 self-stretch bg-border rounded-full" />
+                <div className="h-0.5 bg-border rounded-full sm:hidden lg:block" />
+                <div className="flex-1 min-w-0">
+                  <Stats
+                    beadCount={beadCount}
+                    weeklyCount={weeklyCount}
+                    dailyGoal={dailyGoal}
+                    weeklyGoal={weeklyGoal}
+                    onSetDailyGoal={setDailyGoal}
+                    onSetWeeklyGoal={setWeeklyGoal}
+                    onResetWeeklyGoal={resetWeeklyGoal}
+                  />
+                </div>
+              </section>
+
+              <section
+                aria-label={t('focusSession')}
+                className="order-3 md:order-none rounded-3xl bg-surface border-2 border-border p-4 sm:p-5 md:col-start-2 md:row-start-1 lg:col-start-1 lg:row-start-2 lg:self-start"
+              >
                 <PomodoroTimer
                   activeSession={activeSession}
                   computeSecondsLeft={computeSecondsLeft}
@@ -314,23 +345,25 @@ export default function App() {
                   onReset={resetSession}
                   onCancel={handlePomodoroCancel}
                 />
+              </section>
+
+              <div className="order-2 md:order-none flex md:min-h-0 md:col-span-2 md:row-start-2 lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:row-span-2">
+                <KanbanBoard
+                  tasks={boardTasks}
+                  onStart={(id) => moveTask(id, 'inprog')}
+                  onBack={(id) => moveTask(id, 'todo')}
+                  onComplete={handleComplete}
+                  onAdd={(name, category, col) => addTask(name, category, activeBoardId, col)}
+                  onDelete={deleteTask}
+                  onEdit={editTask}
+                  onDropTask={handleDropTask}
+                  cardRefs={cardRefs}
+                />
               </div>
             </div>
-
-            <KanbanBoard
-              tasks={boardTasks}
-              onStart={(id) => moveTask(id, 'inprog')}
-              onBack={(id) => moveTask(id, 'todo')}
-              onComplete={handleComplete}
-              onAdd={(name, category, col) => addTask(name, category, activeBoardId, col)}
-              onDelete={deleteTask}
-              onEdit={editTask}
-              onDropTask={handleDropTask}
-              cardRefs={cardRefs}
-            />
           </div>
-        </div>
-      )}
+        )}
+      </main>
 
       <AnimatePresence>
         {flyingBeads.map((bead) => (
@@ -352,7 +385,7 @@ export default function App() {
             style={{
               position: 'fixed', top: 0, left: 0,
               width: 16, height: 16, borderRadius: '50%',
-              background: bead.color, pointerEvents: 'none', zIndex: 50,
+              background: pearlBackground(bead.color), pointerEvents: 'none', zIndex: 50,
             }}
           />
         ))}
@@ -373,7 +406,7 @@ export default function App() {
                   animate={{ x: Math.cos(angle) * 24, y: Math.sin(angle) * 24, opacity: 0, scale: 0.3 }}
                   transition={{ duration: 0.5, ease: 'easeOut' }}
                   onAnimationComplete={i === 0 ? () => handleBreakComplete(burst.id) : undefined}
-                  style={{ position: 'absolute', width: 6, height: 6, borderRadius: '50%', background: '#FF4B4B' }}
+                  style={{ position: 'absolute', width: 6, height: 6, borderRadius: '50%', background: colors.pom }}
                 />
               )
             })}

@@ -4,6 +4,13 @@ const VISUAL_THRESHOLD = 44  // px of visual travel before triggering
 const RESISTANCE      = 2.8  // how much actual touch travel shrinks
 const MAX_PULL        = 72   // cap on visual travel
 
+function insideScrolledBox(el) {
+  for (let n = el; n && n !== document.body; n = n.parentElement) {
+    if (n.scrollTop > 0) return true
+  }
+  return false
+}
+
 export function usePullToRefresh(onRefresh) {
   const [pullY, setPullY]       = useState(0)
   const [refreshing, setRefreshing] = useState(false)
@@ -18,6 +25,7 @@ export function usePullToRefresh(onRefresh) {
     function onTouchStart(e) {
       if (busy.current) return
       if (window.scrollY > 5) return  // not at the top
+      if (insideScrolledBox(e.target)) return  // e.g. a board column scrolled down
       startY.current = e.touches[0].clientY
       startX.current = e.touches[0].clientX
       active.current = false

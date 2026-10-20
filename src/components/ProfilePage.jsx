@@ -1,5 +1,11 @@
 import { useRef, useState } from 'react'
+import { Camera, UserRound, Mail, KeyRound, LogOut } from 'lucide-react'
 import { colors } from '../utils/colors'
+import Page from './ui/Page'
+import PageHeader from './ui/PageHeader'
+import Card from './ui/Card'
+import Button from './ui/Button'
+import { inputClass, labelClass } from './ui/styles'
 import { useTranslation } from '../i18n/LanguageContext'
 import { useProfile } from '../hooks/useProfile'
 import { useAuth } from '../contexts/AuthContext'
@@ -7,49 +13,41 @@ import { authErrorMessage } from '../utils/authErrors'
 
 function Field({ label, type = 'text', value, onChange, placeholder, autoComplete }) {
   return (
-    <div className="flex flex-col gap-1">
-      <label className="text-[11px] uppercase font-medium tracking-wide" style={{ color: colors.textMuted }}>
-        {label}
-      </label>
+    <label className="flex flex-col">
+      <span className={labelClass}>{label}</span>
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         autoComplete={autoComplete}
-        className="w-full px-3 py-2.5 rounded-[10px] border outline-none bg-white"
-        style={{ borderColor: colors.border, color: colors.textPrimary }}
+        className={inputClass}
       />
-    </div>
+    </label>
   )
 }
 
-function Section({ title, children }) {
+function Section({ title, icon: Icon, color, children }) {
   return (
-    <div
-      className="rounded-[14px] border overflow-hidden"
-      style={{ borderColor: colors.border, background: colors.surface }}
-    >
-      <div className="px-4 py-3 border-b" style={{ borderColor: colors.border }}>
-        <span className="text-[12px] font-semibold uppercase tracking-wide" style={{ color: colors.textMuted }}>
-          {title}
-        </span>
-      </div>
-      <div className="px-4 py-4 flex flex-col gap-4">{children}</div>
-    </div>
+    <Card>
+      <h2 className="flex items-center gap-2.5 mb-4 text-[17px] font-extrabold text-textPrimary">
+        {Icon && (
+          <span className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: color + '22', color }}>
+            <Icon size={17} strokeWidth={2.5} />
+          </span>
+        )}
+        {title}
+      </h2>
+      <div className="flex flex-col gap-4">{children}</div>
+    </Card>
   )
 }
 
-function SaveBtn({ loading, label = 'Yadda saxla' }) {
+function SaveBtn({ loading, label }) {
   return (
-    <button
-      type="submit"
-      disabled={loading}
-      className="self-start px-5 py-2 rounded-[10px] text-sm font-medium text-white disabled:opacity-50"
-      style={{ background: colors.accent }}
-    >
+    <Button type="submit" disabled={loading} className="self-start">
       {loading ? '...' : label}
-    </button>
+    </Button>
   )
 }
 
@@ -57,7 +55,7 @@ function StatusMsg({ status }) {
   if (!status) return null
   const isErr = status.type === 'error'
   return (
-    <p className="text-[13px]" style={{ color: isErr ? colors.coral : colors.accent }}>
+    <p className={`text-[13px] font-bold px-3 py-2 rounded-xl ${isErr ? 'bg-pomSoft text-coralDark' : 'bg-accentSoft text-accentDark'}`}>
       {status.msg}
     </p>
   )
@@ -163,15 +161,17 @@ export default function ProfilePage({ userId, userEmail, onSignOut }) {
   }
 
   return (
-    <div className="flex-1 px-4 sm:px-6 py-6 max-w-[520px] mx-auto w-full flex flex-col gap-5">
+    <Page width="narrow">
+      <PageHeader title={t('navProfile')} />
+      <div className="flex flex-col gap-4">
 
       {/* ── Avatar + name header ── */}
-      <div className="flex items-center gap-4">
+      <Card className="flex items-center gap-4">
         <div className="relative shrink-0">
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="relative rounded-full overflow-hidden flex items-center justify-center text-white text-xl font-semibold"
-            style={{ width: 72, height: 72, background: colors.accent, opacity: avatarSaving ? 0.6 : 1 }}
+            className="group relative rounded-full overflow-hidden flex items-center justify-center text-white text-2xl font-extrabold border-[3px] border-accentDark"
+            style={{ width: 80, height: 80, background: colors.accent, opacity: avatarSaving ? 0.6 : 1 }}
             aria-label="Change avatar"
           >
             {profile.avatar_url ? (
@@ -182,11 +182,8 @@ export default function ProfilePage({ userId, userEmail, onSignOut }) {
                 referrerPolicy="no-referrer"
               />
             ) : initials}
-            <span
-              className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
-              style={{ background: 'rgba(0,0,0,0.35)', fontSize: 22 }}
-            >
-              📷
+            <span className="absolute inset-0 flex items-center justify-center bg-black/35 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Camera size={22} />
             </span>
           </button>
           <input
@@ -198,22 +195,22 @@ export default function ProfilePage({ userId, userEmail, onSignOut }) {
           />
         </div>
         <div className="min-w-0">
-          <div className="text-base font-semibold truncate" style={{ color: colors.textPrimary }}>
+          <div className="text-[18px] font-extrabold truncate text-textPrimary">
             {profile.first_name || profile.last_name
               ? `${profile.first_name} ${profile.last_name}`.trim()
               : (lang === 'az' ? 'Adınızı əlavə edin' : 'Add your name')}
           </div>
-          <div className="text-sm truncate" style={{ color: colors.textMuted }}>{userEmail}</div>
+          <div className="text-[14px] truncate text-textMuted">{userEmail}</div>
           {profile.profession && (
-            <div className="text-[12px] truncate" style={{ color: colors.textSecondary }}>{profile.profession}</div>
+            <span className="mt-1 inline-block px-2.5 py-0.5 rounded-full bg-blueSoft text-blueDark text-[12px] font-bold truncate max-w-full">{profile.profession}</span>
           )}
         </div>
-      </div>
+      </Card>
 
       {/* ── General info ── */}
-      <Section title={lang === 'az' ? 'Ümumi məlumat' : 'General info'}>
+      <Section icon={UserRound} color={colors.blue} title={lang === 'az' ? 'Ümumi məlumat' : 'General info'}>
         <form onSubmit={handleInfoSubmit} className="flex flex-col gap-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field
               label={lang === 'az' ? 'Ad' : 'First name'}
               value={firstName}
@@ -242,10 +239,10 @@ export default function ProfilePage({ userId, userEmail, onSignOut }) {
       </Section>
 
       {/* ── Email ── */}
-      <Section title={lang === 'az' ? 'E-poçt' : 'Email'}>
-        <div className="text-sm" style={{ color: colors.textSecondary }}>
+      <Section icon={Mail} color={colors.purple} title={lang === 'az' ? 'E-poçt' : 'Email'}>
+        <div className="text-[14px] text-textSecondary">
           {lang === 'az' ? 'Cari:' : 'Current:'}{' '}
-          <span style={{ color: colors.textPrimary }}>{userEmail}</span>
+          <span className="font-bold text-textPrimary break-all">{userEmail}</span>
         </div>
         <form onSubmit={handleEmailSubmit} className="flex flex-col gap-4">
           <Field
@@ -262,7 +259,7 @@ export default function ProfilePage({ userId, userEmail, onSignOut }) {
       </Section>
 
       {/* ── Password ── */}
-      <Section title={lang === 'az' ? 'Şifrə' : 'Password'}>
+      <Section icon={KeyRound} color={colors.orange} title={lang === 'az' ? 'Şifrə' : 'Password'}>
         <form onSubmit={handlePwSubmit} className="flex flex-col gap-4">
           <Field
             label={lang === 'az' ? 'Köhnə şifrə' : 'Current password'}
@@ -294,8 +291,7 @@ export default function ProfilePage({ userId, userEmail, onSignOut }) {
             <button
               type="button"
               onClick={handleForgotPw}
-              className="text-[13px] underline"
-              style={{ color: colors.textSecondary }}
+              className="text-[13px] font-bold text-blueDark hover:underline"
             >
               {t('authForgotPassword')}
             </button>
@@ -304,13 +300,11 @@ export default function ProfilePage({ userId, userEmail, onSignOut }) {
       </Section>
 
       {/* ── Sign out ── */}
-      <button
-        onClick={onSignOut}
-        className="w-full py-2.5 rounded-[10px] border text-sm font-medium"
-        style={{ borderColor: colors.coral, color: colors.coral }}
-      >
+      <Button variant="secondary" onClick={onSignOut} className="w-full !text-coral">
+        <LogOut size={17} strokeWidth={2.5} />
         {lang === 'az' ? 'Hesabdan çıx' : 'Sign out'}
-      </button>
-    </div>
+      </Button>
+      </div>
+    </Page>
   )
 }

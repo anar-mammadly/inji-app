@@ -1,8 +1,13 @@
 import { useState } from 'react'
-import { Plus, X } from 'lucide-react'
+import { Link2, Plus, X } from 'lucide-react'
 import { useTranslation } from '../i18n/LanguageContext'
 import HabitChainCard from './HabitChainCard'
 import Button from './ui/Button'
+import Card from './ui/Card'
+import Page from './ui/Page'
+import PageHeader from './ui/PageHeader'
+import Segmented from './ui/Segmented'
+import { inputClass, labelClass, chipClass } from './ui/styles'
 
 const PRESET_DAYS = [10, 30, 100]
 const HABIT_COLORS = ['#FF4B4B', '#1CB0F6', '#CE82FF', '#FF9600', '#58CC02']
@@ -53,122 +58,138 @@ export default function HabitsPage({
   }
 
   return (
-    <div className="flex-1 px-6 py-8 max-w-[640px] mx-auto w-full">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-extrabold text-textPrimary">{t('habitsTitle')}</h1>
-        <button
-          onClick={() => setAdding((a) => !a)}
-          className="flex items-center gap-1 text-[12px] font-extrabold text-accent"
-        >
-          <Plus size={16} strokeWidth={3} />
-          {t('addHabit')}
-        </button>
-      </div>
+    <Page width="normal">
+      <PageHeader
+        title={t('habitsTitle')}
+        subtitle={t('habitsSubtitle')}
+        actions={
+          <Button size="sm" onClick={() => setAdding((a) => !a)} aria-expanded={adding}>
+            {adding ? <X size={16} strokeWidth={3} /> : <Plus size={16} strokeWidth={3} />}
+            {adding ? t('cancel') : t('addHabit')}
+          </Button>
+        }
+      />
 
       {adding && (
-        <form onSubmit={handleSubmit} className="mb-4 p-3 rounded-2xl border-2 border-border bg-surface flex flex-col gap-2">
-          <input
-            autoFocus
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder={t('habitNamePlaceholder')}
-            className="w-full px-3 py-1.5 text-[13px] font-semibold rounded-xl border-2 border-border outline-none focus:border-accent"
-          />
-
-          <div className="text-[11px] font-extrabold uppercase tracking-wide text-textMuted mt-1">
-            {t('challengeLength')}
+        <Card as="form" onSubmit={handleSubmit} className="mb-5 sm:mb-6 max-w-[640px] flex flex-col gap-4">
+          <div>
+            <label htmlFor="habit-name" className={labelClass}>
+              {t('habitNamePlaceholder')}
+            </label>
+            <input
+              id="habit-name"
+              autoFocus
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={t('habitNamePlaceholder')}
+              className={inputClass}
+            />
           </div>
-          <div className="flex gap-1.5">
-            {PRESET_DAYS.map((d) => (
-              <button
-                key={d}
-                type="button"
-                onClick={() => {
+
+          <div>
+            <div className={labelClass}>{t('challengeLength')}</div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Segmented
+                className="w-full sm:flex-1"
+                value={customDays ? null : targetDays}
+                onChange={(d) => {
                   setTargetDays(d)
                   setCustomDays('')
                 }}
-                className={`flex-1 px-2 py-1.5 rounded-xl text-[12px] font-bold border-2 transition-colors ${
-                  targetDays === d && !customDays
-                    ? 'bg-accentSoft text-accentDark border-accentSoft'
-                    : 'border-border text-textMuted'
-                }`}
-              >
-                {t('challengeDays', { n: d })}
-              </button>
-            ))}
-            <input
-              type="number"
-              min="1"
-              value={customDays}
-              onChange={(e) => setCustomDays(e.target.value)}
-              placeholder={t('customDaysPlaceholder')}
-              className="w-20 px-2 py-1.5 text-[12px] font-bold rounded-xl border-2 border-border outline-none focus:border-accent"
-            />
+                options={PRESET_DAYS.map((d) => ({ value: d, label: t('challengeDays', { n: d }) }))}
+              />
+              <input
+                type="number"
+                min="1"
+                value={customDays}
+                onChange={(e) => setCustomDays(e.target.value)}
+                placeholder={t('customDaysPlaceholder')}
+                aria-label={t('customDaysPlaceholder')}
+                className={`${inputClass} sm:!w-28 ${customDays ? '!border-blue' : ''}`}
+              />
+            </div>
           </div>
 
-          <div className="text-[11px] font-extrabold uppercase tracking-wide text-textMuted mt-1">
-            {t('subOptionsLabel')}
+          <div>
+            <div className={labelClass}>{t('subOptionsLabel')}</div>
+            {subOptions.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {subOptions.map((opt) => (
+                  <span key={opt} className={`${chipClass} h-8 pl-3 pr-1 max-w-full bg-accentSoft text-accentDark`}>
+                    <span className="truncate">{opt}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeSubOption(opt)}
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full hover:bg-white/60"
+                      aria-label={t('deleteOption')}
+                    >
+                      <X size={12} strokeWidth={2.6} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newSubOption}
+                onChange={(e) => setNewSubOption(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    addSubOption()
+                  }
+                }}
+                placeholder={t('newOptionPlaceholder')}
+                className={`${inputClass} flex-1 min-w-0`}
+              />
+              <Button type="button" variant="secondary" onClick={addSubOption} className="shrink-0">
+                <Plus size={16} strokeWidth={3} />
+                {t('addOption')}
+              </Button>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            {subOptions.map((opt) => (
-              <span
-                key={opt}
-                className="flex items-center gap-1 pl-3 pr-1.5 py-1.5 rounded-xl text-[12px] font-bold border-2 border-accentSoft bg-accentSoft text-accentDark"
-              >
-                {opt}
-                <button
-                  type="button"
-                  onClick={() => removeSubOption(opt)}
-                  className="flex items-center justify-center rounded-full hover:bg-white/40"
-                  style={{ width: 16, height: 16 }}
-                  aria-label={t('deleteOption')}
-                >
-                  <X size={10} strokeWidth={2.5} />
-                </button>
-              </span>
-            ))}
-          </div>
-          <div className="flex gap-1.5">
-            <input
-              type="text"
-              value={newSubOption}
-              onChange={(e) => setNewSubOption(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  addSubOption()
-                }
-              }}
-              placeholder={t('newOptionPlaceholder')}
-              className="flex-1 px-2.5 py-1.5 text-[12px] font-semibold rounded-xl border-2 border-border outline-none focus:border-accent"
-            />
-            <Button type="button" variant="secondary" size="sm" onClick={addSubOption}>
-              {t('addOption')}
+
+          <div className="flex justify-end gap-2 pt-1">
+            <Button type="button" variant="ghost" onClick={() => setAdding(false)}>
+              {t('cancel')}
+            </Button>
+            <Button type="submit" disabled={!name.trim()} className="flex-1 sm:flex-none">
+              {t('add')}
             </Button>
           </div>
-
-          <Button type="submit" size="sm" className="mt-1">
-            {t('add')}
-          </Button>
-        </form>
+        </Card>
       )}
 
-      <div className="flex flex-col gap-4">
-        {habits.map((habit) => (
-          <HabitChainCard
-            key={habit.id}
-            habit={habit}
-            log={habitLog[habit.id] || {}}
-            onToggleToday={(note) => onToggleToday(habit.id, note)}
-            onToggleDay={(dateISO) => onToggleDay(habit.id, dateISO)}
-            onDelete={() => onDeleteHabit(habit.id)}
-            onEdit={(name) => onEditHabit(habit.id, name)}
-            onAddOption={(label) => onAddOption(habit.id, label)}
-            onDeleteOption={(label) => onDeleteOption(habit.id, label)}
-          />
-        ))}
-      </div>
-    </div>
+      {habits.length === 0 && !adding ? (
+        <Card className="flex flex-col items-center text-center gap-3 py-10">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orangeSoft">
+            <Link2 size={28} strokeWidth={2.6} className="text-orange" />
+          </div>
+          <p className="text-[16px] font-bold text-textPrimary">{t('noHabitsYet')}</p>
+          <Button onClick={() => setAdding(true)}>
+            <Plus size={18} strokeWidth={3} />
+            {t('addHabit')}
+          </Button>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+          {habits.map((habit) => (
+            <HabitChainCard
+              key={habit.id}
+              habit={habit}
+              log={habitLog[habit.id] || {}}
+              onToggleToday={(note) => onToggleToday(habit.id, note)}
+              onToggleDay={(dateISO) => onToggleDay(habit.id, dateISO)}
+              onDelete={() => onDeleteHabit(habit.id)}
+              onEdit={(name) => onEditHabit(habit.id, name)}
+              onAddOption={(label) => onAddOption(habit.id, label)}
+              onDeleteOption={(label) => onDeleteOption(habit.id, label)}
+            />
+          ))}
+        </div>
+      )}
+    </Page>
   )
 }

@@ -2,9 +2,12 @@ const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))
 const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'))
 
 const SIZES = {
-  sm: { select: 'px-1.5 py-1.5 text-[12px]', sep: 'text-[12px]' },
-  md: { select: 'px-2 py-2 text-[13px]', sep: 'text-[13px]' },
+  sm: { select: 'h-9 pl-2 pr-1 text-[13px] rounded-xl', sep: 'text-[13px]' },
+  md: { select: 'h-11 pl-2.5 pr-1.5 text-[14px] rounded-xl', sep: 'text-[14px]' },
 }
+
+const SELECT_BASE =
+  'font-bold tabular-nums text-textPrimary border-2 border-border bg-white outline-none cursor-pointer transition-colors hover:border-borderStrong focus:border-blue'
 
 // Two native <select> dropdowns (00-23 / 00-59) instead of a free-text field
 // or the native <input type="time">, whose 12h/24h display follows the
@@ -14,11 +17,11 @@ export default function TimeInput24({ value, onChange, size = 'md', className = 
   const s = SIZES[size]
 
   return (
-    <div className={`flex items-center gap-1 ${className}`}>
+    <div className={`flex items-center gap-1 shrink-0 ${className}`}>
       <select
         value={hh || ''}
         onChange={(e) => onChange(`${e.target.value}:${mm || '00'}`)}
-        className={`font-bold rounded-lg border-2 border-border outline-none focus:border-accent bg-surface ${s.select}`}
+        className={`${SELECT_BASE} ${s.select}`}
       >
         <option value="" disabled>
           --
@@ -33,7 +36,7 @@ export default function TimeInput24({ value, onChange, size = 'md', className = 
       <select
         value={mm || ''}
         onChange={(e) => onChange(`${hh || '00'}:${e.target.value}`)}
-        className={`font-bold rounded-lg border-2 border-border outline-none focus:border-accent bg-surface ${s.select}`}
+        className={`${SELECT_BASE} ${s.select}`}
       >
         <option value="" disabled>
           --

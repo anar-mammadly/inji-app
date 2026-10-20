@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from '../i18n/LanguageContext'
 import Modal from './ui/Modal'
 import Button from './ui/Button'
+import { inputClass } from './ui/styles'
 
 export default function AddBoardModal({ open, onClose, onAdd }) {
   const { t } = useTranslation()
@@ -17,21 +18,21 @@ export default function AddBoardModal({ open, onClose, onAdd }) {
 
   return (
     <Modal open={open} onClose={onClose} title={t('addBoard')}>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <input
           autoFocus
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder={t('boardNamePlaceholder')}
-          className="w-full px-3 py-2.5 text-[14px] font-semibold rounded-xl border-2 border-border outline-none focus:border-accent mb-3"
+          className={inputClass}
         />
-        <div className="flex gap-2">
-          <Button type="submit" className="flex-1">
-            {t('add')}
-          </Button>
-          <Button type="button" onClick={onClose} variant="secondary" className="flex-1">
+        <div className="flex justify-end gap-2">
+          <Button type="button" onClick={onClose} variant="ghost">
             {t('cancel')}
+          </Button>
+          <Button type="submit" disabled={!name.trim()}>
+            {t('add')}
           </Button>
         </div>
       </form>

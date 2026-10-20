@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { colors } from '../utils/colors'
+import Modal from './ui/Modal'
+import Button from './ui/Button'
+import { inputClass } from './ui/styles'
 import { useTranslation } from '../i18n/LanguageContext'
 import { useAuth } from '../contexts/AuthContext'
 import { authErrorMessage } from '../utils/authErrors'
@@ -51,120 +52,79 @@ export default function AuthModal({ onClose, initialMode = 'login', initialError
     setInfo('')
   }
 
+  const linkBtn = 'font-extrabold text-blueDark hover:underline'
+
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      style={{ background: 'rgba(44,44,42,0.4)', backdropFilter: 'blur(4px)' }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <motion.div
-        initial={{ scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.95, opacity: 0 }}
-        transition={{ duration: 0.15 }}
-        className="w-full max-w-sm rounded-[14px] border p-6 relative"
-        style={{ background: colors.surface, borderColor: colors.border }}
-      >
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 flex items-center justify-center rounded-[6px] hover:bg-bg transition-colors"
-          style={{ width: 28, height: 28, color: colors.textMuted }}
-          aria-label="Close"
-        >
-          <svg width="12" height="12" viewBox="0 0 12 12">
-            <path d="M1 1 L11 11 M11 1 L1 11" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
-          </svg>
-        </button>
-
-        <div className="text-base font-semibold lowercase text-center mb-1">
-          i<span style={{ color: colors.accent }}>n</span>ji
+    <Modal open onClose={onClose}>
+      <div className="text-center mb-5">
+        <div className="text-[30px] font-extrabold tracking-tight lowercase leading-none text-textPrimary">
+          i<span className="text-accent">n</span>ji
         </div>
-        <div className="text-center text-sm mb-5" style={{ color: colors.textSecondary }}>
-          {t(SUBTITLE_KEY[mode])}
-        </div>
+        <p className="mt-2 text-[15px] font-semibold text-textSecondary">{t(SUBTITLE_KEY[mode])}</p>
+      </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <input
+          type="email"
+          required
+          inputMode="email"
+          autoCapitalize="none"
+          autoCorrect="off"
+          autoComplete="email"
+          autoFocus
+          placeholder={t('authEmail')}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className={inputClass}
+        />
+        {mode !== 'forgot' && (
           <input
-            type="email"
+            type="password"
             required
-            inputMode="email"
-            autoCapitalize="none"
-            autoCorrect="off"
-            autoComplete="email"
-            autoFocus
-            placeholder={t('authEmail')}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="px-3 py-2.5 rounded-[8px] border text-sm outline-none"
-            style={{ borderColor: colors.border, color: colors.textPrimary }}
+            minLength={6}
+            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            placeholder={t('authPassword')}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className={inputClass}
           />
-          {mode !== 'forgot' && (
-            <input
-              type="password"
-              required
-              minLength={6}
-              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-              placeholder={t('authPassword')}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="px-3 py-2.5 rounded-[8px] border text-sm outline-none"
-              style={{ borderColor: colors.border, color: colors.textPrimary }}
-            />
-          )}
+        )}
 
-          {mode === 'login' && (
-            <button
-              type="button"
-              className="self-end -mt-1 text-[13px] underline"
-              style={{ color: colors.textSecondary }}
-              onClick={() => switchMode('forgot')}
-            >
-              {t('authForgotPassword')}
-            </button>
-          )}
-
-          {error && <div className="text-sm" style={{ color: colors.coral }}>{error}</div>}
-          {info  && <div className="text-sm" style={{ color: colors.accent }}>{info}</div>}
-
-          <button
-            type="submit"
-            disabled={submitting}
-            className="mt-1 py-2.5 rounded-[8px] text-sm font-medium text-white disabled:opacity-60"
-            style={{ background: colors.accent }}
-          >
-            {t(SUBMIT_KEY[mode])}
+        {mode === 'login' && (
+          <button type="button" className={`self-end -mt-0.5 text-[13px] ${linkBtn}`} onClick={() => switchMode('forgot')}>
+            {t('authForgotPassword')}
           </button>
-        </form>
+        )}
 
-        <div className="text-center text-sm mt-4" style={{ color: colors.textSecondary }}>
-          {mode === 'login' ? (
-            <>
-              {t('authNoAccount')}{' '}
-              <button type="button" className="font-medium underline" style={{ color: colors.accent }}
-                onClick={() => switchMode('register')}>
-                {t('authRegisterButton')}
-              </button>
-            </>
-          ) : mode === 'register' ? (
-            <>
-              {t('authHaveAccount')}{' '}
-              <button type="button" className="font-medium underline" style={{ color: colors.accent }}
-                onClick={() => switchMode('login')}>
-                {t('authLoginButton')}
-              </button>
-            </>
-          ) : (
-            <button type="button" className="font-medium underline" style={{ color: colors.accent }}
-              onClick={() => switchMode('login')}>
-              {t('authBackToLogin')}
+        {error && <p className="text-[13px] font-bold px-3 py-2 rounded-xl bg-pomSoft text-coralDark">{error}</p>}
+        {info && <p className="text-[13px] font-bold px-3 py-2 rounded-xl bg-accentSoft text-accentDark">{info}</p>}
+
+        <Button type="submit" disabled={submitting} className="mt-1 w-full">
+          {t(SUBMIT_KEY[mode])}
+        </Button>
+      </form>
+
+      <div className="text-center text-[14px] font-semibold mt-5 text-textSecondary">
+        {mode === 'login' ? (
+          <>
+            {t('authNoAccount')}{' '}
+            <button type="button" className={linkBtn} onClick={() => switchMode('register')}>
+              {t('authRegisterButton')}
             </button>
-          )}
-        </div>
-      </motion.div>
-    </motion.div>
+          </>
+        ) : mode === 'register' ? (
+          <>
+            {t('authHaveAccount')}{' '}
+            <button type="button" className={linkBtn} onClick={() => switchMode('login')}>
+              {t('authLoginButton')}
+            </button>
+          </>
+        ) : (
+          <button type="button" className={linkBtn} onClick={() => switchMode('login')}>
+            {t('authBackToLogin')}
+          </button>
+        )}
+      </div>
+    </Modal>
   )
 }

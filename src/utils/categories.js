@@ -7,7 +7,7 @@ export const CATEGORY_LABEL_KEYS = {
 }
 
 export const categoryStyles = {
-  study: { bg: '#F3E4FF', text: '#A855F7' },
-  work: { bg: '#DDF4FF', text: '#0E8FCE' },
-  personal: { bg: '#FFE8CC', text: '#E07C00' },
+  study: { bg: '#F3E4FF', text: '#A855F7', dot: '#CE82FF' },
+  work: { bg: '#DDF4FF', text: '#0E8FCE', dot: '#1CB0F6' },
+  personal: { bg: '#FFE8CC', text: '#E07C00', dot: '#FF9600' },
 }

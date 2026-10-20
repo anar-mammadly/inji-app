@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react'
 import { format } from 'date-fns'
-import { Pencil, X } from 'lucide-react'
+import { Pencil, X, PenLine, Plus } from 'lucide-react'
 import { useTranslation } from '../i18n/LanguageContext'
 import Button from './ui/Button'
+import Card from './ui/Card'
+import { chipClass, iconButtonClass, textareaClass } from './ui/styles'
 import MarkdownToolbar from './MarkdownToolbar'
 import MarkdownContent from './MarkdownContent'
 
@@ -19,50 +21,50 @@ function JournalItem({ entry, onEdit, onDelete }) {
   }
 
   return (
-    <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-surfaceAlt">
-      <div className="mt-2 w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
-      <div className="flex-1 min-w-0">
-        {editing ? (
-          <div>
-            <MarkdownToolbar textareaRef={editRef} value={value} setValue={setValue} />
-            <textarea
-              ref={editRef}
-              autoFocus
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                  e.preventDefault()
-                  commit()
-                }
-              }}
-              rows={4}
-              className="w-full text-[13px] font-semibold text-textPrimary outline-none bg-surface border-2 border-accent rounded-xl px-2.5 py-2 resize-none font-mono"
-            />
-            <div className="flex justify-end mt-1.5">
-              <Button size="sm" onClick={commit}>
-                {t('save')}
-              </Button>
-            </div>
+    <div className="rounded-2xl border-2 border-border bg-white p-3 sm:p-4 shadow-[0_2px_0_#E5E7EB]">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="h-2.5 w-2.5 rounded-full bg-accent shrink-0" />
+        <span className="text-[12px] font-bold tabular-nums text-textMuted">{format(new Date(entry.createdAt), 'HH:mm')}</span>
+        {!editing && (
+          <div className="ml-auto -my-1 -mr-1.5 flex items-center shrink-0">
+            <button onClick={() => setEditing(true)} className={iconButtonClass} aria-label={t('editEntry')}>
+              <Pencil size={14} strokeWidth={2.5} />
+            </button>
+            <button
+              onClick={onDelete}
+              className={`${iconButtonClass} hover:!bg-pomSoft hover:!text-coral`}
+              aria-label={t('deleteEntry')}
+            >
+              <X size={16} strokeWidth={2.6} />
+            </button>
           </div>
-        ) : (
-          <MarkdownContent text={entry.text} />
         )}
-        <div className="text-[10px] font-bold text-textMuted mt-1">{format(new Date(entry.createdAt), 'HH:mm')}</div>
       </div>
-      {!editing && (
-        <div className="flex items-center gap-1.5 shrink-0">
-          <button
-            onClick={() => setEditing(true)}
-            className="text-textMuted hover:text-textSecondary transition-colors"
-            aria-label={t('editEntry')}
-          >
-            <Pencil size={12} strokeWidth={2.5} />
-          </button>
-          <button onClick={onDelete} className="text-textMuted hover:text-coral transition-colors" aria-label={t('deleteEntry')}>
-            <X size={13} strokeWidth={2.5} />
-          </button>
+      {editing ? (
+        <div>
+          <MarkdownToolbar textareaRef={editRef} value={value} setValue={setValue} />
+          <textarea
+            ref={editRef}
+            autoFocus
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault()
+                commit()
+              }
+            }}
+            rows={4}
+            className={`${textareaClass} font-mono text-[13px] !border-blue`}
+          />
+          <div className="flex justify-end mt-2">
+            <Button size="sm" onClick={commit}>
+              {t('save')}
+            </Button>
+          </div>
         </div>
+      ) : (
+        <MarkdownContent text={entry.text} />
       )}
     </div>
   )
@@ -83,32 +85,41 @@ export default function JournalEntry({ entries, onAdd, onEdit, onDelete }) {
   const sorted = [...entries].sort((a, b) => b.createdAt.localeCompare(a.createdAt))
 
   return (
-    <div className="rounded-3xl border-2 border-border bg-surface p-4">
-      <div className="text-[11px] uppercase font-extrabold tracking-wide text-textMuted mb-2">{t('journalPrompt')}</div>
+    <Card className="flex flex-col gap-4">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-accentSoft">
+          <PenLine size={20} strokeWidth={2.5} className="text-accentDark" />
+        </div>
+        <h2 className="flex-1 min-w-0 text-[18px] leading-snug font-extrabold text-textPrimary">{t('journalPrompt')}</h2>
+        <span className={`${chipClass} shrink-0 bg-accentSoft text-accentDark tabular-nums`}>{format(new Date(), 'd MMM')}</span>
+      </div>
 
-      <MarkdownToolbar textareaRef={composeRef} value={text} setValue={setText} />
-      <textarea
-        ref={composeRef}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-            e.preventDefault()
-            submit()
-          }
-        }}
-        rows={4}
-        placeholder={t('journalPlaceholder')}
-        className="w-full text-[13px] font-semibold px-3 py-2 rounded-xl border-2 border-border outline-none resize-none focus:border-accent font-mono"
-      />
-      <div className="mt-2 flex justify-end">
-        <Button size="sm" onClick={submit}>
-          {t('addEntry')}
-        </Button>
+      <div>
+        <MarkdownToolbar textareaRef={composeRef} value={text} setValue={setText} />
+        <textarea
+          ref={composeRef}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault()
+              submit()
+            }
+          }}
+          rows={4}
+          placeholder={t('journalPlaceholder')}
+          className={`${textareaClass} font-mono text-[13px]`}
+        />
+        <div className="mt-3 flex justify-end">
+          <Button onClick={submit} className="w-full sm:w-auto">
+            <Plus size={18} strokeWidth={3} />
+            {t('addEntry')}
+          </Button>
+        </div>
       </div>
 
       {sorted.length > 0 && (
-        <div className="mt-3 flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           {sorted.map((entry) => (
             <JournalItem
               key={entry.id}
@@ -119,6 +130,6 @@ export default function JournalEntry({ entries, onAdd, onEdit, onDelete }) {
           ))}
         </div>
       )}
-    </div>
+    </Card>
   )
 }

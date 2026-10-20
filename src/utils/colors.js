@@ -10,10 +10,15 @@ export const colors = {
   borderStrong: '#D1D5DB',
   textPrimary: '#3C3C3C',
   textSecondary: '#6B7280',
-  textMuted: '#AFAFAF',
+  textMuted: '#9CA0A8',
+  ink: '#3C3C3C',
   accent: '#58CC02',
   accentDark: '#46A302',
   accentSoft: '#DFFAB8',
+  green: '#58CC02',
+  greenDark: '#46A302',
+  pom: '#FF4B4B',
+  pomSoft: '#FFE3E3',
   blue: '#1CB0F6',
   blueDark: '#0E8FCE',
   purple: '#CE82FF',
@@ -24,6 +29,8 @@ export const colors = {
   coralDark: '#EA2B2B',
   yellow: '#FFC800',
   yellowDark: '#E0A800',
+  pink: '#FF86D0',
+  pinkDark: '#E5559F',
 }
 
 export const beadColors = ['#58CC02', '#1CB0F6', '#FF9600', '#CE82FF', '#FF4B4B', '#FFC800']

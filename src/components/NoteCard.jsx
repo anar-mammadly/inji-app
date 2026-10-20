@@ -9,7 +9,8 @@ export default function NoteCard({ note, index, onEdit, onDelete }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(note.text)
   const { bg, fold } = stickyNoteColors[index % stickyNoteColors.length]
-  const tilt = (index % 2 === 0 ? 1 : -1) * ((index % 3) + 1) * 0.6
+  // a gentle, deterministic tilt so the wall feels hand-placed but stays tidy
+  const tilt = (index % 2 === 0 ? 1 : -1) * ((index % 3) + 1) * 0.4
 
   function commit() {
     const trimmed = draft.trim()
@@ -22,36 +23,30 @@ export default function NoteCard({ note, index, onEdit, onDelete }) {
     setEditing(false)
   }
 
+  const iconBtn =
+    'flex h-8 w-8 items-center justify-center rounded-xl text-textPrimary/45 transition-colors hover:bg-white/60 hover:text-textPrimary/80'
+
   return (
     <div
-      className="relative rounded-lg p-4 pt-5 flex flex-col gap-2 min-h-[160px] shadow-card transition-transform hover:-translate-y-0.5 hover:rotate-0"
-      style={{ background: bg, transform: `rotate(${tilt}deg)` }}
+      className="group relative flex flex-col gap-2 min-h-[180px] rounded-2xl border-2 p-4 pt-3 transition-transform duration-200 rotate-[var(--tilt)] hover:-translate-y-1 hover:rotate-0"
+      style={{ background: bg, borderColor: fold, boxShadow: `0 4px 0 ${fold}`, "--tilt": `${tilt}deg` }}
     >
+      {/* folded corner */}
       <div
-        className="absolute top-0 right-0 w-5 h-5 rounded-bl-lg"
-        style={{
-          background: `linear-gradient(135deg, transparent 50%, ${fold} 50%)`,
-        }}
+        className="absolute -top-0.5 -right-0.5 h-6 w-6 rounded-bl-xl"
+        style={{ background: `linear-gradient(225deg, #F7F9FB 50%, ${fold} 50%)` }}
       />
 
-      <div className="flex items-start justify-between gap-2">
-        <div className="text-[11px] font-bold text-textPrimary/50">
+      <div className="flex items-center justify-between gap-2 pr-4">
+        <div className="text-[12px] font-bold tabular-nums text-textPrimary/55">
           {format(new Date(note.createdAt), 'd MMM, HH:mm')}
         </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <button
-            onClick={() => setEditing((e) => !e)}
-            className="text-textPrimary/40 hover:text-textPrimary/80 transition-colors"
-            aria-label={t('editNote')}
-          >
-            <Pencil size={13} strokeWidth={2.5} />
+        <div className="-mr-2 flex items-center shrink-0">
+          <button onClick={() => setEditing((e) => !e)} className={iconBtn} aria-label={t('editNote')}>
+            <Pencil size={14} strokeWidth={2.5} />
           </button>
-          <button
-            onClick={onDelete}
-            className="text-textPrimary/40 hover:text-coral transition-colors"
-            aria-label={t('deleteNote')}
-          >
-            <X size={15} strokeWidth={2.5} />
+          <button onClick={onDelete} className={`${iconBtn} hover:!text-coral`} aria-label={t('deleteNote')}>
+            <X size={16} strokeWidth={2.6} />
           </button>
         </div>
       </div>
@@ -70,12 +65,12 @@ export default function NoteCard({ note, index, onEdit, onDelete }) {
             }
           }}
           rows={5}
-          className="flex-1 bg-transparent outline-none text-[14px] font-semibold text-textPrimary resize-none placeholder:text-textPrimary/40"
+          className="flex-1 -mx-1.5 px-1.5 py-1 rounded-xl bg-white/50 outline-none ring-2 ring-white/80 text-[15px] leading-relaxed font-medium text-textPrimary resize-none placeholder:text-textPrimary/40"
         />
       ) : (
         <div
           onClick={() => setEditing(true)}
-          className="flex-1 whitespace-pre-wrap break-words text-[14px] font-semibold text-textPrimary cursor-text"
+          className="flex-1 whitespace-pre-wrap break-words text-[15px] leading-relaxed font-medium text-textPrimary cursor-text"
         >
           {note.text}
         </div>

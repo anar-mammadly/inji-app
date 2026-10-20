@@ -29,7 +29,6 @@ export default function PomodoroTimer({
   const totalSeconds = mode === 'focus' ? FOCUS_SECONDS : BREAK_SECONDS
   const secondsLeft = activeSession ? computeSecondsLeft(activeSession) : totalSeconds
   const color = mode === 'focus' ? colors.accent : colors.yellow
-  const shadowColor = mode === 'focus' ? colors.accentDark : colors.yellowDark
 
   useEffect(() => {
     if (!running) return
@@ -58,40 +57,65 @@ export default function PomodoroTimer({
   const ss = String(wholeSecondsLeft % 60).padStart(2, '0')
   const progress = 1 - Math.max(secondsLeft, 0) / totalSeconds
 
-  return (
-    <div className="w-full rounded-2xl border-2 border-border bg-surface p-3 flex flex-col items-center">
-      <span className="text-[11px] uppercase font-extrabold tracking-wide self-start mb-2 text-textMuted">
-        Pomodoro
-      </span>
+  const linkedTask = activeSession?.taskId ? tasks.find((tsk) => tsk.id === activeSession.taskId) : null
 
-      <div className="relative" style={{ width: 88, height: 88 }}>
-        <svg width="88" height="88" viewBox="0 0 88 88">
-          <circle cx="44" cy="44" r={RADIUS} fill="none" stroke={colors.surfaceAlt} strokeWidth="7" />
-          <motion.circle
-            cx="44"
-            cy="44"
-            r={RADIUS}
-            fill="none"
-            stroke={color}
-            strokeWidth="7"
-            strokeLinecap="round"
-            strokeDasharray={CIRCUMFERENCE}
-            initial={{ strokeDashoffset: CIRCUMFERENCE, opacity: 0 }}
-            animate={{
-              strokeDashoffset: CIRCUMFERENCE * (1 - progress),
-              opacity: progress > 0 ? 1 : 0,
-            }}
-            transition={{ duration: 0.4, ease: 'linear' }}
-            transform="rotate(-90 44 44)"
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-[18px] font-extrabold leading-none text-textPrimary">
-            {mm}:{ss}
-          </span>
-          <span className="text-[10px] font-extrabold uppercase mt-0.5" style={{ color }}>
-            {mode === 'focus' ? t('pomodoroFocus') : t('pomodoroBreak')}
-          </span>
+  return (
+    <div className="w-full">
+      <div className="flex items-center gap-4">
+        <div className="relative w-[76px] h-[76px] shrink-0">
+          <svg viewBox="0 0 88 88" className="w-full h-full">
+            <circle cx="44" cy="44" r={RADIUS} fill="none" stroke={colors.surfaceAlt} strokeWidth="8" />
+            <motion.circle
+              cx="44"
+              cy="44"
+              r={RADIUS}
+              fill="none"
+              stroke={color}
+              strokeWidth="8"
+              strokeLinecap="round"
+              strokeDasharray={CIRCUMFERENCE}
+              initial={{ strokeDashoffset: CIRCUMFERENCE, opacity: 0 }}
+              animate={{
+                strokeDashoffset: CIRCUMFERENCE * (1 - progress),
+                opacity: progress > 0 ? 1 : 0,
+              }}
+              transition={{ duration: 0.4, ease: 'linear' }}
+              transform="rotate(-90 44 44)"
+            />
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-[18px] font-extrabold leading-none tabular-nums tracking-tight text-textPrimary">
+              {mm}:{ss}
+            </span>
+          </div>
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 text-[13px]">
+            <span className="h-2.5 w-2.5 rounded-full" style={{ background: color }} />
+            <span className="font-extrabold text-textPrimary">
+              {mode === 'focus' ? t('pomodoroFocus') : t('pomodoroBreak')}
+            </span>
+          </div>
+          {linkedTask && (
+            <div className="mt-0.5 text-[12px] text-textMuted truncate" title={linkedTask.name}>
+              {linkedTask.name}
+            </div>
+          )}
+          <div className="flex gap-2 mt-2.5">
+            <Button onClick={handlePrimaryAction} size="sm" variant={running ? 'secondary' : 'primary'} className="flex-1">
+              {running ? t('pomodoroPause') : activeSession ? t('pomodoroResume') : t('pomodoroStart')}
+            </Button>
+            {hasFocusProgress ? (
+              <Button onClick={onCancel} variant="ghost" size="sm" className="hover:!text-pom" title={t('pomodoroCancelHint')}>
+                {t('pomodoroCancel')}
+              </Button>
+            ) : (
+              <Button onClick={onReset} variant="ghost" size="sm">
+                {t('pomodoroReset')}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -99,7 +123,8 @@ export default function PomodoroTimer({
         <select
           value={taskId}
           onChange={(e) => setTaskId(e.target.value)}
-          className="w-full mt-3 text-[12px] font-bold px-2 py-1.5 rounded-xl border-2 border-border outline-none text-textSecondary"
+          aria-label={t('pomodoroNoTask')}
+          className="w-full mt-3 h-10 px-3 rounded-xl border-2 border-border bg-white text-[13px] font-bold text-textSecondary outline-none focus:border-blue"
         >
           <option value="">{t('pomodoroNoTask')}</option>
           {tasks.map((task) => (
@@ -109,33 +134,7 @@ export default function PomodoroTimer({
           ))}
         </select>
       )}
-
-      {activeSession?.taskId && (
-        <div className="w-full mt-3 text-[11px] font-bold text-textSecondary truncate">
-          {t('pomodoroLinkedTo')} {tasks.find((tsk) => tsk.id === activeSession.taskId)?.name || ''}
-        </div>
-      )}
-
-      <div className="flex gap-2 mt-3 w-full">
-        <Button
-          onClick={handlePrimaryAction}
-          size="sm"
-          className="flex-1"
-          style={{ background: color, boxShadow: `0 4px 0 ${shadowColor}` }}
-        >
-          {running ? t('pomodoroPause') : activeSession ? t('pomodoroResume') : t('pomodoroStart')}
-        </Button>
-        {hasFocusProgress ? (
-          <Button onClick={onCancel} variant="danger" size="sm" className="flex-1">
-            {t('pomodoroCancel')}
-          </Button>
-        ) : (
-          <Button onClick={onReset} variant="secondary" size="sm" className="flex-1">
-            {t('pomodoroReset')}
-          </Button>
-        )}
-      </div>
-      {hasFocusProgress && <div className="w-full mt-1.5 text-[10px] text-textMuted">{t('pomodoroCancelHint')}</div>}
+      {hasFocusProgress && <div className="mt-2 text-[12px] text-textMuted">{t('pomodoroCancelHint')}</div>}
     </div>
   )
 }

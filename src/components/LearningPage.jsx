@@ -2,10 +2,15 @@ import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { format } from 'date-fns'
 import { useTranslation } from '../i18n/LanguageContext'
-import LearningGoalCard from './LearningGoalCard'
+import LearningGoalCard, { SUB_CATEGORY_STYLES } from './LearningGoalCard'
 import JournalEntry from './JournalEntry'
 import JournalArchive from './JournalArchive'
 import Button from './ui/Button'
+import Card from './ui/Card'
+import Page from './ui/Page'
+import PageHeader from './ui/PageHeader'
+import Segmented from './ui/Segmented'
+import { inputClass, labelClass } from './ui/styles'
 
 const SUB_CATEGORIES = ['books', 'courses', 'skills']
 const SUB_CATEGORY_LABEL_KEYS = { books: 'subCategoryBooks', courses: 'subCategoryCourses', skills: 'subCategorySkills' }
@@ -25,60 +30,75 @@ function AddGoalForm({ onAdd, onCancel, initialSubCategory = 'books' }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="p-3 rounded-2xl border-2 border-border bg-surface flex flex-col gap-2 mb-4">
+    <Card as="form" onSubmit={handleSubmit} className="mb-4 flex flex-col gap-4">
       <input
         autoFocus
         type="text"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder={t('goalTitlePlaceholder')}
-        className="px-3 py-1.5 text-[13px] font-semibold rounded-xl border-2 border-border outline-none focus:border-accent"
+        className={inputClass}
       />
-      <div className="flex gap-1.5">
-        {SUB_CATEGORIES.map((sc) => (
-          <button
-            key={sc}
-            type="button"
-            onClick={() => setSubCategory(sc)}
-            className={`flex-1 px-2 py-1.5 rounded-xl text-[12px] font-bold border-2 ${
-              subCategory === sc ? 'bg-accentSoft text-accentDark border-accentSoft' : 'border-border text-textMuted'
-            }`}
-          >
-            {t(SUB_CATEGORY_LABEL_KEYS[sc])}
-          </button>
-        ))}
+
+      <div className="grid grid-cols-3 gap-2">
+        {SUB_CATEGORIES.map((sc) => {
+          const s = SUB_CATEGORY_STYLES[sc]
+          const Icon = s.icon
+          const active = subCategory === sc
+          return (
+            <button
+              key={sc}
+              type="button"
+              onClick={() => setSubCategory(sc)}
+              aria-pressed={active}
+              className={`min-w-0 h-10 px-2 inline-flex items-center justify-center gap-1.5 rounded-xl border-2 text-[13px] font-bold transition-colors ${
+                active ? '' : 'border-border bg-white text-textMuted hover:text-textSecondary'
+              }`}
+              style={active ? { background: s.soft, borderColor: s.color, color: s.dark } : undefined}
+            >
+              <Icon size={15} strokeWidth={2.5} className="shrink-0" />
+              <span className="truncate">{t(SUB_CATEGORY_LABEL_KEYS[sc])}</span>
+            </button>
+          )
+        })}
       </div>
-      <div className="flex gap-2">
-        <input
-          type="number"
-          min="1"
-          value={targetProgress}
-          onChange={(e) => setTargetProgress(e.target.value)}
-          className="w-20 px-2 py-1.5 text-[12px] font-bold rounded-xl border-2 border-border outline-none"
-        />
-        <input
-          type="text"
-          value={unit}
-          onChange={(e) => setUnit(e.target.value)}
-          placeholder={t('unitPlaceholder')}
-          className="flex-1 px-2 py-1.5 text-[12px] font-bold rounded-xl border-2 border-border outline-none"
-        />
-        <input
-          type="date"
-          value={targetDate}
-          onChange={(e) => setTargetDate(e.target.value)}
-          className="px-2 py-1.5 text-[12px] font-bold rounded-xl border-2 border-border outline-none"
-        />
+
+      <div className="grid grid-cols-[96px_1fr] sm:grid-cols-[96px_1fr_180px] gap-3">
+        <div>
+          <label className={labelClass}>{t('goalTarget')}</label>
+          <input
+            type="number"
+            min="1"
+            value={targetProgress}
+            onChange={(e) => setTargetProgress(e.target.value)}
+            className={`${inputClass} tabular-nums`}
+          />
+        </div>
+        <div className="min-w-0">
+          <label className={labelClass}>{t('goalUnit')}</label>
+          <input
+            type="text"
+            value={unit}
+            onChange={(e) => setUnit(e.target.value)}
+            placeholder={t('unitPlaceholder')}
+            className={inputClass}
+          />
+        </div>
+        <div className="col-span-2 sm:col-span-1">
+          <label className={labelClass}>{t('goalsDeadline')}</label>
+          <input type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} className={inputClass} />
+        </div>
       </div>
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" className="flex-1">
+
+      <div className="flex gap-3">
+        <Button type="submit" className="flex-1">
           {t('add')}
         </Button>
-        <Button type="button" size="sm" variant="secondary" onClick={onCancel} className="flex-1">
+        <Button type="button" variant="secondary" onClick={onCancel} className="flex-1">
           {t('cancel')}
         </Button>
       </div>
-    </form>
+    </Card>
   )
 }
 
@@ -100,23 +120,29 @@ export default function LearningPage({
 
   const todayKey = format(new Date(), 'yyyy-MM-dd')
   const todayEntries = journalEntries.filter((e) => e.date === todayKey)
+  const visibleGoals = learningGoals.filter((g) => g.subCategory === activeSub)
+  const activeStyle = SUB_CATEGORY_STYLES[activeSub]
+  const EmptyIcon = activeStyle.icon
 
   return (
-    <div className="flex-1 px-6 py-8 max-w-[640px] mx-auto w-full">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-extrabold text-textPrimary">{t('learningTitle')}</h1>
-        <div className="flex items-center rounded-xl border-2 border-border overflow-hidden text-[12px] font-extrabold">
-          <button onClick={() => setIsJournal(false)} className={`px-3 py-1.5 ${!isJournal ? 'bg-accent text-white' : 'text-textSecondary'}`}>
-            {t('learningGoalsTab')}
-          </button>
-          <button onClick={() => setIsJournal(true)} className={`px-3 py-1.5 ${isJournal ? 'bg-accent text-white' : 'text-textSecondary'}`}>
-            {t('learningJournalTab')}
-          </button>
-        </div>
-      </div>
+    <Page width="normal">
+      <PageHeader
+        title={t('learningTitle')}
+        subtitle={t('learningSubtitle')}
+        actions={
+          <Segmented
+            value={isJournal ? 'journal' : 'goals'}
+            onChange={(v) => setIsJournal(v === 'journal')}
+            options={[
+              { value: 'goals', label: t('learningGoalsTab') },
+              { value: 'journal', label: t('learningJournalTab') },
+            ]}
+          />
+        }
+      />
 
       {isJournal ? (
-        <div className="flex flex-col gap-4">
+        <div className="max-w-[760px] flex flex-col gap-4">
           <JournalEntry
             entries={todayEntries}
             onAdd={(text) => onAddJournalEntry(todayKey, text)}
@@ -131,45 +157,55 @@ export default function LearningPage({
         </div>
       ) : (
         <>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex gap-1.5">
-              {SUB_CATEGORIES.map((sc) => (
-                <button
-                  key={sc}
-                  onClick={() => setActiveSub(sc)}
-                  className={`px-3 py-1.5 rounded-xl text-[12px] font-extrabold border-2 ${
-                    activeSub === sc ? 'bg-accent text-white border-accent' : 'border-border text-textSecondary'
-                  }`}
-                >
-                  {t(SUB_CATEGORY_LABEL_KEYS[sc])}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={() => setAdding((a) => !a)}
-              className="flex items-center gap-1 text-[12px] font-extrabold text-accent"
-            >
-              <Plus size={16} strokeWidth={3} />
-              {t('addGoal')}
-            </button>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <Segmented
+              className="w-full sm:w-auto"
+              value={activeSub}
+              onChange={setActiveSub}
+              options={SUB_CATEGORIES.map((sc) => ({
+                value: sc,
+                label: t(SUB_CATEGORY_LABEL_KEYS[sc]),
+                count: learningGoals.filter((g) => g.subCategory === sc).length,
+              }))}
+            />
+            {!adding && (
+              <Button size="sm" onClick={() => setAdding(true)} className="w-full sm:w-auto">
+                <Plus size={16} strokeWidth={3} />
+                {t('addGoal')}
+              </Button>
+            )}
           </div>
 
           {adding && (
-            <AddGoalForm
-              initialSubCategory={activeSub}
-              onAdd={(data) => {
-                onAddGoal(data)
-                setActiveSub(data.subCategory) // show the tab the new goal landed in
-                setAdding(false)
-              }}
-              onCancel={() => setAdding(false)}
-            />
+            <div className="max-w-[640px]">
+              <AddGoalForm
+                initialSubCategory={activeSub}
+                onAdd={(data) => {
+                  onAddGoal(data)
+                  setActiveSub(data.subCategory) // show the tab the new goal landed in
+                  setAdding(false)
+                }}
+                onCancel={() => setAdding(false)}
+              />
+            </div>
           )}
 
-          <div className="flex flex-col gap-3">
-            {learningGoals
-              .filter((g) => g.subCategory === activeSub)
-              .map((goal) => (
+          {visibleGoals.length === 0 ? (
+            <Card className="flex flex-col items-center text-center gap-3 py-10">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: activeStyle.soft }}>
+                <EmptyIcon size={28} strokeWidth={2.5} style={{ color: activeStyle.color }} />
+              </div>
+              <p className="text-[15px] font-bold text-textSecondary">{t('noLearningGoals')}</p>
+              {!adding && (
+                <Button size="sm" onClick={() => setAdding(true)}>
+                  <Plus size={16} strokeWidth={3} />
+                  {t('addGoal')}
+                </Button>
+              )}
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {visibleGoals.map((goal) => (
                 <LearningGoalCard
                   key={goal.id}
                   goal={goal}
@@ -178,12 +214,10 @@ export default function LearningPage({
                   onDelete={() => onDeleteGoal(goal.id)}
                 />
               ))}
-            {learningGoals.filter((g) => g.subCategory === activeSub).length === 0 && (
-              <div className="text-sm font-bold text-textMuted">{t('noLearningGoals')}</div>
-            )}
-          </div>
+            </div>
+          )}
         </>
       )}
-    </div>
+    </Page>
   )
 }

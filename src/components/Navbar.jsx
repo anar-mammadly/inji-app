@@ -1,158 +1,278 @@
-import { Flame } from 'lucide-react'
-import { colors } from '../utils/colors'
+import { useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+import {
+  SquareKanban,
+  CalendarRange,
+  Link2,
+  CalendarDays,
+  BookOpen,
+  StickyNote,
+  ChartColumn,
+  Flame,
+  Ellipsis,
+  LogIn,
+} from 'lucide-react'
 import { useTranslation } from '../i18n/LanguageContext'
-import { useBakuClock } from '../hooks/useBakuClock'
 
-const EN_TO_AZ_WEEKDAY = {
-  Sunday: 'Bazar',
-  Monday: 'Bazar ertəsi',
-  Tuesday: 'Çərşənbə axşamı',
-  Wednesday: 'Çərşənbə',
-  Thursday: 'Cümə axşamı',
-  Friday: 'Cümə',
-  Saturday: 'Şənbə',
-}
+// every section gets its own candy color, Duolingo-style
+const NAV = [
+  { id: 'board', icon: SquareKanban, key: 'navBoard', color: '#58CC02' },
+  { id: 'plan', icon: CalendarRange, key: 'navPlan', color: '#1CB0F6' },
+  { id: 'habits', icon: Link2, key: 'navHabits', color: '#FF9600' },
+  { id: 'calendar', icon: CalendarDays, key: 'navCalendar', color: '#FF4B4B' },
+  { id: 'learning', icon: BookOpen, key: 'navLearning', color: '#CE82FF' },
+  { id: 'notes', icon: StickyNote, key: 'navNotes', color: '#FFC800' },
+  { id: 'stats', icon: ChartColumn, key: 'navStats', color: '#1CB0F6' },
+]
+// first four live in the mobile tab bar; the rest go in the "More" sheet
+const MOBILE_TABS = NAV.slice(0, 4)
+const MOBILE_MORE = NAV.slice(4)
 
-const EN_TO_AZ_MONTH = {
-  January: 'Yanvar',
-  February: 'Fevral',
-  March: 'Mart',
-  April: 'Aprel',
-  May: 'May',
-  June: 'İyun',
-  July: 'İyul',
-  August: 'Avqust',
-  September: 'Sentyabr',
-  October: 'Oktyabr',
-  November: 'Noyabr',
-  December: 'Dekabr',
-}
-
-function getBakuDateParts(date) {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'Asia/Baku',
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  }).formatToParts(date)
-
-  return Object.fromEntries(parts.map((p) => [p.type, p.value]))
-}
-
-function formatBakuTime(date) {
-  return new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Asia/Baku',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(date)
-}
-
-function formatDateTime(lang, date, { short } = {}) {
-  const { weekday, month, day, year } = getBakuDateParts(date)
-  const time = formatBakuTime(date)
-
-  if (short) {
-    return lang === 'az' ? `${day} ${EN_TO_AZ_MONTH[month]} · ${time}` : `${month} ${day} · ${time}`
+export function Logo({ compact = false }) {
+  if (compact) {
+    return <span className="nacre inline-block h-8 w-8 rounded-full border-2 border-greenDark" aria-label="inji" />
   }
-  if (lang === 'az') {
-    return `${EN_TO_AZ_WEEKDAY[weekday]}, ${day} ${EN_TO_AZ_MONTH[month]} ${year} · ${time}`
-  }
-  return `${weekday}, ${month} ${day}, ${year} · ${time}`
+  return (
+    <span className="text-[26px] font-extrabold tracking-tight leading-none lowercase select-none text-textPrimary">
+      i<span className="text-accent">n</span>ji
+    </span>
+  )
 }
 
-export default function Navbar({ streakDays, page, onNavigate, user, onSignIn, onSignOut, profileName, profileAvatar }) {
-  const { lang, setLang, t } = useTranslation()
-  const now = useBakuClock()
-
+function Avatar({ user, profileName, profileAvatar, size = 32 }) {
   const initials = profileName?.trim()
     ? profileName.trim().split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase()
     : (user?.email?.[0] ?? '?').toUpperCase()
-
-  const AuthButton = user ? (
-    <button
-      onClick={() => onNavigate('profile')}
-      className="flex items-center justify-center rounded-full text-white text-[12px] font-extrabold shrink-0 overflow-hidden border-2"
-      style={{
-        width: 32,
-        height: 32,
-        background: colors.accent,
-        borderColor: page === 'profile' ? colors.accentDark : 'transparent',
-      }}
-      aria-label="Profile"
+  return (
+    <span
+      className="inline-flex items-center justify-center rounded-full bg-accent text-white text-[12px] font-extrabold overflow-hidden shrink-0 border-2 border-greenDark"
+      style={{ width: size, height: size }}
     >
       {profileAvatar ? (
-        <img src={profileAvatar} alt="avatar" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+        <img src={profileAvatar} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
       ) : (
         initials
       )}
-    </button>
-  ) : (
-    <button
-      onClick={onSignIn}
-      className="text-[12px] font-extrabold px-3 py-1.5 rounded-xl border-2 shrink-0"
-      style={{ borderColor: colors.accent, color: colors.accent }}
-    >
-      {t('authLoginButton')}
-    </button>
+    </span>
   )
+}
+
+function LangToggle({ className = '' }) {
+  const { lang, setLang } = useTranslation()
+  return (
+    <div className={`inline-flex rounded-xl border-2 border-border overflow-hidden text-[12px] font-extrabold ${className}`}>
+      {['az', 'en'].map((code) => (
+        <button
+          key={code}
+          onClick={() => setLang(code)}
+          aria-pressed={lang === code}
+          className={`px-3 h-8 transition-colors ${lang === code ? 'bg-blue text-white' : 'bg-white text-textMuted hover:text-textSecondary'}`}
+        >
+          {code.toUpperCase()}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function Streak({ streakDays, compact = false }) {
+  const { t } = useTranslation()
+  const lit = streakDays > 0
+  return (
+    <span
+      className={`inline-flex items-center gap-1 text-[14px] font-extrabold whitespace-nowrap ${lit ? 'text-orange' : 'text-textMuted'}`}
+      title={t('streak', { n: streakDays })}
+    >
+      <Flame size={20} strokeWidth={2.4} fill={lit ? '#FF9600' : '#E5E7EB'} className={lit ? 'text-orange' : 'text-borderStrong'} />
+      {compact ? streakDays : t('streak', { n: streakDays })}
+    </span>
+  )
+}
+
+function NavIcon({ icon: Icon, color, size = 22 }) {
+  return <Icon size={size} strokeWidth={2.4} style={{ color }} />
+}
+
+export default function Navbar({ streakDays, page, onNavigate, user, onSignIn, profileName, profileAvatar }) {
+  const { t } = useTranslation()
+  const [moreOpen, setMoreOpen] = useState(false)
+
+  function go(id) {
+    onNavigate(id)
+    setMoreOpen(false)
+  }
+
+  const accountLabel = profileName?.trim() || user?.email
+  const activeItem = 'bg-blueSoft border-[#84D8FF] text-blueDark'
+  const idleItem = 'border-transparent text-textSecondary hover:bg-surfaceAlt'
 
   return (
-    <div className="border-b border-border bg-surface">
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 px-4 sm:px-6 py-3 sm:h-14 sm:py-0">
-        <div className="text-lg font-extrabold lowercase shrink-0">
-          i<span className="text-accent">n</span>ji
+    <>
+      {/* ── Desktop / tablet: side rail (icons on md, icons + labels on lg) ── */}
+      <aside className="hidden md:flex sticky top-0 h-dvh shrink-0 flex-col border-r-2 border-border bg-surface md:w-[84px] lg:w-[240px]">
+        <div className="flex h-[72px] items-center justify-center lg:justify-start lg:px-6">
+          <span className="lg:hidden"><Logo compact /></span>
+          <span className="hidden lg:inline"><Logo /></span>
         </div>
 
-        <div className="basis-full sm:basis-auto order-1 sm:order-none -mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto no-scrollbar">
-          <div className="flex items-center gap-1 text-[12px] font-extrabold w-max sm:w-auto">
-            {[
-              { id: 'board', label: t('navBoard') },
-              { id: 'stats', label: t('navStats') },
-              { id: 'habits', label: t('navHabits') },
-              { id: 'learning', label: t('navLearning') },
-              { id: 'calendar', label: t('navCalendar') },
-              { id: 'plan', label: t('navPlan') },
-              { id: 'notes', label: t('navNotes') },
-            ].map(({ id, label }) => (
+        <nav className="flex-1 overflow-y-auto no-scrollbar px-3 flex flex-col gap-1.5">
+          {NAV.map(({ id, icon, key, color }) => {
+            const active = page === id
+            return (
               <button
                 key={id}
-                onClick={() => onNavigate(id)}
-                className={`px-3 py-1.5 rounded-xl transition-colors whitespace-nowrap ${
-                  page === id ? 'bg-accentSoft text-accentDark' : 'text-textSecondary hover:bg-surfaceAlt'
+                onClick={() => go(id)}
+                title={t(key)}
+                aria-current={active ? 'page' : undefined}
+                className={`flex items-center gap-3.5 h-12 rounded-2xl border-2 px-0 lg:px-3.5 justify-center lg:justify-start text-[15px] font-extrabold transition-colors ${
+                  active ? activeItem : idleItem
                 }`}
               >
-                {label}
+                <NavIcon icon={icon} color={color} />
+                <span className="hidden lg:inline">{t(key)}</span>
               </button>
-            ))}
+            )
+          })}
+        </nav>
+
+        <div className="px-3 pb-4 pt-3 flex flex-col gap-3 border-t-2 border-border">
+          <div className="flex justify-center lg:justify-start lg:px-3">
+            <span className="lg:hidden"><Streak streakDays={streakDays} compact /></span>
+            <span className="hidden lg:inline"><Streak streakDays={streakDays} /></span>
           </div>
-        </div>
-
-        <div className="order-last sm:order-none sm:ml-auto text-[11px] sm:text-sm font-bold text-textSecondary whitespace-nowrap">
-          <span className="sm:hidden">{formatDateTime(lang, now, { short: true })}</span>
-          <span className="hidden sm:inline">{formatDateTime(lang, now)}</span>
-        </div>
-
-        <span className="flex items-center gap-1 text-sm font-extrabold text-orange whitespace-nowrap">
-          <Flame size={16} className="text-orange" strokeWidth={2.5} fill="#FF9600" />
-          {t('streak', { n: streakDays })}
-        </span>
-
-        <div className="flex items-center rounded-xl border-2 border-border overflow-hidden text-[11px] font-extrabold shrink-0">
-          {['az', 'en'].map((code) => (
+          <LangToggle className="self-center lg:self-start lg:ml-3" />
+          {user ? (
             <button
-              key={code}
-              onClick={() => setLang(code)}
-              className={`px-2.5 py-1 transition-colors ${lang === code ? 'bg-accent text-white' : 'text-textSecondary'}`}
+              onClick={() => go('profile')}
+              className={`flex items-center gap-2.5 rounded-2xl border-2 p-1.5 lg:px-2.5 justify-center lg:justify-start transition-colors ${
+                page === 'profile' ? activeItem : idleItem
+              }`}
+              title={accountLabel}
             >
-              {code.toUpperCase()}
+              <Avatar user={user} profileName={profileName} profileAvatar={profileAvatar} />
+              <span className="hidden lg:block min-w-0 truncate text-[13px] font-extrabold">{accountLabel}</span>
             </button>
-          ))}
+          ) : (
+            <button
+              onClick={onSignIn}
+              className="press flex items-center justify-center gap-2 h-11 rounded-2xl bg-accent text-white text-[14px] font-extrabold shadow-[0_4px_0_#46A302] hover:bg-[#61D90A]"
+              title={t('authLoginButton')}
+            >
+              <LogIn size={18} strokeWidth={2.5} />
+              <span className="hidden lg:inline">{t('authLoginButton')}</span>
+            </button>
+          )}
         </div>
+      </aside>
 
-        <div className="shrink-0 ml-auto sm:ml-0">{AuthButton}</div>
-      </div>
-    </div>
+      {/* ── Mobile: top bar ── */}
+      <header className="md:hidden sticky top-0 z-30 flex items-center justify-between gap-3 h-14 px-4 bg-surface border-b-2 border-border pt-[env(safe-area-inset-top)] box-content">
+        <Logo />
+        <div className="flex items-center gap-3">
+          <Streak streakDays={streakDays} compact />
+          {user ? (
+            <button onClick={() => go('profile')} aria-label={accountLabel}>
+              <Avatar user={user} profileName={profileName} profileAvatar={profileAvatar} size={32} />
+            </button>
+          ) : (
+            <button
+              onClick={onSignIn}
+              className="press h-9 px-3.5 rounded-xl bg-accent text-white text-[13px] font-extrabold shadow-[0_3px_0_#46A302]"
+            >
+              {t('authLoginButton')}
+            </button>
+          )}
+        </div>
+      </header>
+
+      {/* ── Mobile: bottom tab bar ── */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t-2 border-border bg-surface pb-[env(safe-area-inset-bottom)]">
+        <div className="grid grid-cols-5 h-[66px] px-1.5 gap-1">
+          {MOBILE_TABS.map(({ id, icon, key, color }) => {
+            const active = page === id
+            return (
+              <button
+                key={id}
+                onClick={() => go(id)}
+                aria-current={active ? 'page' : undefined}
+                className={`my-1.5 flex flex-col items-center justify-center gap-0.5 rounded-2xl border-2 text-[11px] font-extrabold ${
+                  active ? activeItem : 'border-transparent text-textMuted'
+                }`}
+              >
+                <NavIcon icon={icon} color={color} />
+                <span className="leading-none">{t(key)}</span>
+              </button>
+            )
+          })}
+          {(() => {
+            const active = moreOpen || MOBILE_MORE.some((n) => n.id === page) || page === 'profile'
+            return (
+              <button
+                onClick={() => setMoreOpen(true)}
+                className={`my-1.5 flex flex-col items-center justify-center gap-0.5 rounded-2xl border-2 text-[11px] font-extrabold ${
+                  active ? activeItem : 'border-transparent text-textMuted'
+                }`}
+              >
+                <Ellipsis size={22} strokeWidth={2.6} className="text-textMuted" />
+                <span className="leading-none">{t('navMore')}</span>
+              </button>
+            )
+          })()}
+        </div>
+      </nav>
+
+      {/* ── Mobile: "More" sheet ── */}
+      <AnimatePresence>
+        {moreOpen && (
+          <div className="md:hidden fixed inset-0 z-50 flex items-end">
+            <motion.div
+              className="absolute inset-0 bg-black/40"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setMoreOpen(false)}
+            />
+            <motion.div
+              className="relative w-full rounded-t-3xl border-t-2 border-border bg-surface px-4 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))]"
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', stiffness: 380, damping: 36 }}
+            >
+              <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-border" />
+              <div className="grid grid-cols-2 gap-2">
+                {MOBILE_MORE.map(({ id, icon, key, color }) => (
+                  <button
+                    key={id}
+                    onClick={() => go(id)}
+                    className={`flex items-center gap-3 h-14 px-4 rounded-2xl border-2 text-[15px] font-extrabold ${
+                      page === id ? activeItem : 'border-border text-textSecondary'
+                    }`}
+                  >
+                    <NavIcon icon={icon} color={color} />
+                    {t(key)}
+                  </button>
+                ))}
+                {user && (
+                  <button
+                    onClick={() => go('profile')}
+                    className={`flex items-center gap-3 h-14 px-4 rounded-2xl border-2 text-[15px] font-extrabold ${
+                      page === 'profile' ? activeItem : 'border-border text-textSecondary'
+                    }`}
+                  >
+                    <Avatar user={user} profileName={profileName} profileAvatar={profileAvatar} size={24} />
+                    {t('navProfile')}
+                  </button>
+                )}
+              </div>
+              <div className="mt-4 pt-4 border-t-2 border-border flex items-center justify-between px-1">
+                <span className="text-[14px] font-extrabold text-textSecondary">{t('language')}</span>
+                <LangToggle />
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </>
   )
 }

@@ -18,7 +18,7 @@ function mergeRefs(refs) {
 const TaskCard = forwardRef(function TaskCard({ task, onStart, onBack, onComplete, onDelete, onEdit }, forwardedRef) {
   const { t } = useTranslation()
   const isDone = task.col === 'done'
-  const cat = categoryStyles[task.category]
+  const cat = categoryStyles[task.category] ?? categoryStyles.personal
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: task.id })
   const [editing, setEditing] = useState(false)
   const [editValue, setEditValue] = useState(task.name)
@@ -35,29 +35,30 @@ const TaskCard = forwardRef(function TaskCard({ task, onStart, onBack, onComplet
 
   const style = {
     transform: CSS.Translate.toString(transform),
-    opacity: isDragging ? 0.4 : isDone ? 0.75 : 1,
     zIndex: isDragging ? 10 : 'auto',
   }
 
   return (
-    <div
+    <article
       ref={mergeRefs([forwardedRef, setNodeRef])}
       style={style}
-      className="p-3 rounded-2xl border-2 border-border bg-surface transition-colors hover:border-borderStrong touch-none"
+      className={`group rounded-2xl border-2 bg-white p-3 touch-none transition-colors ${
+        isDragging ? 'border-blue shadow-[0_6px_0_#D1D5DB]' : 'border-border shadow-[0_2px_0_#E5E7EB] hover:border-borderStrong'
+      } ${isDone ? 'opacity-80' : ''}`}
     >
       <div className="flex items-start gap-2.5">
         <button
           onClick={() => !isDone && onComplete(task)}
           disabled={isDone}
-          className={`mt-0.5 flex items-center justify-center rounded-full border-[2.5px] shrink-0 transition-all hover:border-accent hover:scale-110 ${
-            isDone ? 'border-accent bg-accent' : 'border-borderStrong'
+          aria-label={t('doneAction')}
+          className={`mt-0.5 flex h-6 w-6 items-center justify-center rounded-full shrink-0 transition-all ${
+            isDone ? 'bg-accent border-2 border-accentDark' : 'border-[2.5px] border-borderStrong hover:border-accent hover:scale-110'
           }`}
-          style={{ width: 22, height: 22 }}
         >
-          {isDone && <Check size={13} strokeWidth={3} className="text-white" />}
+          {isDone && <Check size={14} strokeWidth={3.5} className="text-white" />}
         </button>
 
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           {editing ? (
             <input
               ref={inputRef}
@@ -71,68 +72,67 @@ const TaskCard = forwardRef(function TaskCard({ task, onStart, onBack, onComplet
                 }
               }}
               onBlur={commitEdit}
-              className="w-full text-[14px] font-semibold outline-none bg-transparent border-b-2 border-accent"
+              className="w-full text-[15px] font-bold outline-none bg-transparent border-b-2 border-blue"
             />
           ) : (
             <div {...listeners} {...attributes} className="cursor-grab active:cursor-grabbing">
-              <div className={`text-[14px] font-semibold ${isDone ? 'text-textMuted line-through' : 'text-textPrimary'}`}>
+              <p className={`text-[15px] leading-snug font-bold break-words ${isDone ? 'text-textMuted line-through' : 'text-textPrimary'}`}>
                 {task.name}
-              </div>
+              </p>
             </div>
           )}
-          <span
-            className="inline-block mt-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold"
-            style={{ background: cat.bg, color: cat.text }}
-          >
-            {t(CATEGORY_LABEL_KEYS[task.category])}
-          </span>
 
-          {!isDone && (
-            <div className="flex gap-3 mt-2">
-              {task.col === 'todo' && (
-                <button onClick={() => onStart(task.id)} className="text-[12px] font-bold text-textSecondary">
-                  {t('start')}
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold" style={{ background: cat.bg, color: cat.text }}>
+              {t(CATEGORY_LABEL_KEYS[task.category])}
+            </span>
+            {task.col === 'todo' && (
+              <button
+                onClick={() => onStart(task.id)}
+                className="press h-7 px-3 rounded-xl bg-blue text-white text-[12px] font-extrabold shadow-[0_3px_0_#0E8FCE]"
+              >
+                {t('start')}
+              </button>
+            )}
+            {task.col === 'inprog' && (
+              <>
+                <button
+                  onClick={() => onComplete(task)}
+                  className="press h-7 px-3 rounded-xl bg-accent text-white text-[12px] font-extrabold shadow-[0_3px_0_#46A302]"
+                >
+                  {t('doneAction')}
                 </button>
-              )}
-              {task.col === 'inprog' && (
-                <>
-                  <button onClick={() => onBack(task.id)} className="text-[12px] font-bold text-textSecondary">
-                    {t('back')}
-                  </button>
-                  <button onClick={() => onComplete(task)} className="text-[12px] font-bold text-accent">
-                    {t('doneAction')}
-                  </button>
-                </>
-              )}
-            </div>
-          )}
+                <button onClick={() => onBack(task.id)} className="h-7 px-1.5 text-[12px] font-extrabold text-textMuted hover:text-textSecondary">
+                  {t('back')}
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
-        <div className="flex items-center shrink-0 gap-0.5">
+        <div className="flex items-center shrink-0 -mr-1 -mt-1">
           {!isDone && !editing && (
             <button
               onClick={() => {
                 setEditValue(task.name)
                 setEditing(true)
               }}
-              className="-mt-0.5 flex items-center justify-center rounded-lg text-textMuted transition-colors hover:bg-bg hover:text-textSecondary"
-              style={{ width: 22, height: 22 }}
-              aria-label="Edit task"
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-textMuted transition-colors hover:bg-surfaceAlt hover:text-textSecondary"
+              aria-label={t('edit')}
             >
-              <Pencil size={12} strokeWidth={2.5} />
+              <Pencil size={13} strokeWidth={2.5} />
             </button>
           )}
           <button
             onClick={() => onDelete(task.id)}
-            className="-mt-0.5 -mr-0.5 flex items-center justify-center rounded-lg text-textMuted transition-colors hover:bg-bg hover:text-coral"
-            style={{ width: 22, height: 22 }}
-            aria-label="Delete task"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-textMuted transition-colors hover:bg-pomSoft hover:text-coral"
+            aria-label={t('delete')}
           >
-            <X size={13} strokeWidth={2.5} />
+            <X size={15} strokeWidth={2.5} />
           </button>
         </div>
       </div>
-    </div>
+    </article>
   )
 })
 
