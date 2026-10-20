@@ -333,7 +333,7 @@ export default function App() {
 
               <section
                 aria-label={t('focusSession')}
-                className="order-3 md:order-none rounded-3xl bg-surface border-2 border-border p-4 sm:p-5 md:col-start-2 md:row-start-1 lg:col-start-1 lg:row-start-2 lg:self-start"
+                className="order-3 md:order-none flex rounded-3xl bg-surface border-2 border-border p-4 sm:p-5 md:col-start-2 md:row-start-1 lg:col-start-1 lg:row-start-2 lg:min-h-0 lg:overflow-y-auto no-scrollbar"
               >
                 <PomodoroTimer
                   activeSession={activeSession}
