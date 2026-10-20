@@ -26,6 +26,15 @@ export function useTaskStore(state, setState) {
   function completeTask(id) {
     setState((s) => {
       const task = s.tasks.find((t) => t.id === id)
+      if (!task || task.col === 'done') return s
+      // a task dragged back out of Done and completed again still moves to
+      // Done, but must not be counted (bead, stats, history) a second time
+      if (s.completedTasks.some((c) => c.id === id)) {
+        return {
+          ...s,
+          tasks: s.tasks.map((t) => (t.id === id ? { ...t, col: 'done', completedAt: new Date().toISOString() } : t)),
+        }
+      }
       return {
         ...s,
         tasks: s.tasks.map((t) =>

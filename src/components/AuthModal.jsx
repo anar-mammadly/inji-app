@@ -3,14 +3,18 @@ import { motion } from 'framer-motion'
 import { colors } from '../utils/colors'
 import { useTranslation } from '../i18n/LanguageContext'
 import { useAuth } from '../contexts/AuthContext'
+import { authErrorMessage } from '../utils/authErrors'
 
-export default function AuthModal({ onClose }) {
+const SUBTITLE_KEY = { login: 'authLoginSubtitle', register: 'authRegisterSubtitle', forgot: 'authResetSubtitle' }
+const SUBMIT_KEY = { login: 'authLoginButton', register: 'authRegisterButton', forgot: 'authResetButton' }
+
+export default function AuthModal({ onClose, initialMode = 'login', initialError = '' }) {
   const { t } = useTranslation()
-  const { signIn, signUp } = useAuth()
-  const [mode, setMode] = useState('login')
+  const { signIn, signUp, resetPassword } = useAuth()
+  const [mode, setMode] = useState(initialMode)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+  const [error, setError] = useState(initialError)
   const [info, setInfo] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -19,9 +23,19 @@ export default function AuthModal({ onClose }) {
     setError('')
     setInfo('')
     setSubmitting(true)
-    const { error } = mode === 'login' ? await signIn(email, password) : await signUp(email, password)
+    const cleanEmail = email.trim()
+
+    if (mode === 'forgot') {
+      const { error } = await resetPassword(cleanEmail)
+      if (error) setError(authErrorMessage(error, t))
+      else setInfo(t('authResetSent'))
+      setSubmitting(false)
+      return
+    }
+
+    const { error } = mode === 'login' ? await signIn(cleanEmail, password) : await signUp(cleanEmail, password)
     if (error) {
-      setError(error.message)
+      setError(authErrorMessage(error, t))
       setSubmitting(false)
     } else if (mode === 'register') {
       setInfo(t('authCheckEmail'))
@@ -70,7 +84,7 @@ export default function AuthModal({ onClose }) {
           i<span style={{ color: colors.accent }}>n</span>ji
         </div>
         <div className="text-center text-sm mb-5" style={{ color: colors.textSecondary }}>
-          {mode === 'login' ? t('authLoginSubtitle') : t('authRegisterSubtitle')}
+          {t(SUBTITLE_KEY[mode])}
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
@@ -88,17 +102,30 @@ export default function AuthModal({ onClose }) {
             className="px-3 py-2.5 rounded-[8px] border text-sm outline-none"
             style={{ borderColor: colors.border, color: colors.textPrimary }}
           />
-          <input
-            type="password"
-            required
-            minLength={6}
-            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-            placeholder={t('authPassword')}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="px-3 py-2.5 rounded-[8px] border text-sm outline-none"
-            style={{ borderColor: colors.border, color: colors.textPrimary }}
-          />
+          {mode !== 'forgot' && (
+            <input
+              type="password"
+              required
+              minLength={6}
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              placeholder={t('authPassword')}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="px-3 py-2.5 rounded-[8px] border text-sm outline-none"
+              style={{ borderColor: colors.border, color: colors.textPrimary }}
+            />
+          )}
+
+          {mode === 'login' && (
+            <button
+              type="button"
+              className="self-end -mt-1 text-[13px] underline"
+              style={{ color: colors.textSecondary }}
+              onClick={() => switchMode('forgot')}
+            >
+              {t('authForgotPassword')}
+            </button>
+          )}
 
           {error && <div className="text-sm" style={{ color: colors.coral }}>{error}</div>}
           {info  && <div className="text-sm" style={{ color: colors.accent }}>{info}</div>}
@@ -109,7 +136,7 @@ export default function AuthModal({ onClose }) {
             className="mt-1 py-2.5 rounded-[8px] text-sm font-medium text-white disabled:opacity-60"
             style={{ background: colors.accent }}
           >
-            {mode === 'login' ? t('authLoginButton') : t('authRegisterButton')}
+            {t(SUBMIT_KEY[mode])}
           </button>
         </form>
 
@@ -122,7 +149,7 @@ export default function AuthModal({ onClose }) {
                 {t('authRegisterButton')}
               </button>
             </>
-          ) : (
+          ) : mode === 'register' ? (
             <>
               {t('authHaveAccount')}{' '}
               <button type="button" className="font-medium underline" style={{ color: colors.accent }}
@@ -130,6 +157,11 @@ export default function AuthModal({ onClose }) {
                 {t('authLoginButton')}
               </button>
             </>
+          ) : (
+            <button type="button" className="font-medium underline" style={{ color: colors.accent }}
+              onClick={() => switchMode('login')}>
+              {t('authBackToLogin')}
+            </button>
           )}
         </div>
       </motion.div>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Flame, X, PartyPopper, Plus, Pencil } from 'lucide-react'
-import { addDays, format } from 'date-fns'
+import { addDays, format, parseISO } from 'date-fns'
 import { useTranslation } from '../i18n/LanguageContext'
 import HabitChainLinks from './HabitChainLinks'
 
@@ -18,7 +18,7 @@ export default function HabitChainCard({ habit, log, onToggleToday, onToggleDay,
   const targetDays = habit.targetDays || 30
   const startDate = habit.startDate || todayKey
   const subOptions = habit.subOptions || []
-  const filledCount = Array.from({ length: targetDays }, (_, i) => format(addDays(new Date(startDate), i), 'yyyy-MM-dd')).filter(
+  const filledCount = Array.from({ length: targetDays }, (_, i) => format(addDays(parseISO(startDate), i), 'yyyy-MM-dd')).filter(
     (key) => !!log[key],
   ).length
   const isComplete = filledCount >= targetDays

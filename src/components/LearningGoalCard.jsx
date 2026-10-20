@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { format } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import { X } from 'lucide-react'
 import { useTranslation } from '../i18n/LanguageContext'
 import { requestNotificationPermission } from '../hooks/useReminders'
@@ -40,8 +40,8 @@ export default function LearningGoalCard({ goal, onUpdateProgress, onSetReminder
       </div>
 
       <div className="text-[11px] font-bold text-textMuted mb-3">
-        {format(new Date(goal.startDate), 'd MMM')}
-        {goal.targetDate && ` → ${format(new Date(goal.targetDate), 'd MMM yyyy')}`}
+        {format(parseISO(goal.startDate), 'd MMM')}
+        {goal.targetDate && ` → ${format(parseISO(goal.targetDate), 'd MMM yyyy')}`}
       </div>
 
       <div className="flex items-center gap-2 mb-2">

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { redirectTo } from '../contexts/AuthContext'
 
 const empty = { first_name: '', last_name: '', profession: '', avatar_url: '' }
 
@@ -49,18 +50,24 @@ export function useProfile(userId) {
 
   async function changePassword(oldPassword, newPassword) {
     // Verify old password by re-authenticating
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user }, error: userErr } = await supabase.auth.getUser()
+    if (userErr || !user) return { error: userErr ?? { message: 'Not signed in' } }
     const { error: authErr } = await supabase.auth.signInWithPassword({
       email: user.email,
       password: oldPassword,
     })
-    if (authErr) return { error: { message: 'Köhnə şifrə yanlışdır' } }
+    if (authErr) {
+      return { error: authErr.code === 'invalid_credentials' ? { code: 'wrong_current_password' } : authErr }
+    }
     const { error } = await supabase.auth.updateUser({ password: newPassword })
     return { error }
   }
 
   async function changeEmail(newEmail) {
-    const { error } = await supabase.auth.updateUser({ email: newEmail })
+    const { error } = await supabase.auth.updateUser(
+      { email: newEmail },
+      { emailRedirectTo: redirectTo() },
+    )
     return { error }
   }
 

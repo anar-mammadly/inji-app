@@ -10,6 +10,7 @@ import {
   isSameMonth,
   isToday,
   format,
+  parseISO,
 } from 'date-fns'
 import { az } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Check, Pencil, X, Clock } from 'lucide-react'
@@ -113,7 +114,7 @@ function DayDetailModal({ open, onClose, dateKey, events, lang, onAdd, onToggleD
   }
 
   const sorted = [...events].sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'))
-  const dateLabel = dateKey ? format(new Date(dateKey), 'd MMMM yyyy, EEEE', { locale: lang === 'az' ? az : undefined }) : ''
+  const dateLabel = dateKey ? format(parseISO(dateKey), 'd MMMM yyyy, EEEE', { locale: lang === 'az' ? az : undefined }) : ''
 
   return (
     <Modal open={open} onClose={onClose} title={dateLabel}>

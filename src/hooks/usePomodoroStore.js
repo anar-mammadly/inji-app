@@ -64,7 +64,9 @@ export function usePomodoroStore(state, setState) {
   function advanceToNextMode() {
     setState((s) => {
       const session = s.activeSession
-      if (!session) return s
+      // only a running session that has actually run out can advance — this
+      // updater may be replayed on a fresher server copy where it hasn't
+      if (!session || session.status !== 'running' || computeSecondsLeft(session) > 0) return s
 
       const nextHistory =
         session.mode === 'focus'

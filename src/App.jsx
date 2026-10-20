@@ -14,6 +14,7 @@ import NotesPage from './components/NotesPage'
 import PlanPage from './components/PlanPage'
 import ProfilePage from './components/ProfilePage'
 import AuthModal from './components/AuthModal'
+import ResetPasswordModal from './components/ResetPasswordModal'
 import PullToRefreshIndicator from './components/PullToRefreshIndicator'
 import { usePullToRefresh } from './hooks/usePullToRefresh'
 import { usePersistedState } from './hooks/usePersistedState'
@@ -29,10 +30,14 @@ import { useProfile } from './hooks/useProfile'
 import { useAuth } from './contexts/AuthContext'
 import { beadColors } from './utils/colors'
 import { scheduleDropSound, playBeadBreakSound } from './utils/sound'
+import { authErrorMessage } from './utils/authErrors'
+import { useTranslation } from './i18n/LanguageContext'
 
 export default function App() {
-  const { user, loading, signOut } = useAuth()
-  const [showAuth, setShowAuth] = useState(false)
+  const { user, loading, signOut, passwordRecovery, linkError, clearLinkError } = useAuth()
+  const { t } = useTranslation()
+  // a failed email link (e.g. an expired reset link) opens the auth modal with the reason
+  const [showAuth, setShowAuth] = useState(() => !!linkError)
 
   const userId = user?.id ?? 'guest'
 
@@ -158,7 +163,8 @@ export default function App() {
   function handleComplete(task) {
     const cardEl = cardRefs.current[task.id]
     const jarEl = jarRef.current
-    if (!cardEl || !jarEl) {
+    const alreadyCounted = completedTasks.some((c) => c.id === task.id)
+    if (!cardEl || !jarEl || alreadyCounted) {
       completeTask(task.id)
       return
     }
@@ -376,7 +382,19 @@ export default function App() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
+        {passwordRecovery && user ? (
+          <ResetPasswordModal key="reset" />
+        ) : showAuth && (
+          <AuthModal
+            key="auth"
+            initialMode={linkError ? 'forgot' : 'login'}
+            initialError={authErrorMessage(linkError, t)}
+            onClose={() => {
+              setShowAuth(false)
+              clearLinkError()
+            }}
+          />
+        )}
       </AnimatePresence>
     </div>
   )

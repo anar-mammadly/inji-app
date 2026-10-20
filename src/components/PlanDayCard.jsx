@@ -151,19 +151,24 @@ function PlanTodoRow({ todo, onToggle, onEdit, onSetTime, onDelete }) {
 
   if (editing) {
     return (
-      <div className="flex items-center gap-1.5 py-0.5">
+      <div
+        className="flex items-center gap-1.5 py-0.5"
+        // commit only when focus leaves the whole row — moving from the text
+        // field to the time selects must not close the editor mid-click
+        onBlur={(e) => !e.currentTarget.contains(e.relatedTarget) && commit()}
+      >
         <TimeInput24 value={timeDraft} onChange={setTimeDraft} size="sm" />
         <input
           autoFocus
           type="text"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          onBlur={commit}
           onKeyDown={(e) => e.key === 'Enter' && commit()}
           className="flex-1 min-w-0 px-1.5 py-1 text-[12px] font-semibold rounded-lg border-2 border-border outline-none focus:border-accent"
         />
         {timeDraft && (
           <button
+            onMouseDown={(e) => e.preventDefault()} // keep focus inside the row (Safari doesn't focus buttons)
             onClick={() => setTimeDraft('')}
             className="text-textMuted hover:text-coral transition-colors shrink-0"
             aria-label={t('planClearTime')}
@@ -197,7 +202,11 @@ function PlanTodoRow({ todo, onToggle, onEdit, onSetTime, onDelete }) {
         </span>
       )}
       <div
-        onClick={() => setEditing(true)}
+        onClick={() => {
+          setDraft(todo.text)
+          setTimeDraft(todo.time || '')
+          setEditing(true)
+        }}
         className={`flex-1 min-w-0 truncate text-[12px] font-semibold cursor-text ${
           todo.done ? 'line-through text-textMuted' : 'text-textPrimary'
         }`}

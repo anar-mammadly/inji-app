@@ -91,13 +91,28 @@ function saveStoredEntry(storageKey, data, savedAt = new Date().toISOString()) {
   localStorage.setItem(storageKey, JSON.stringify({ __v: 1, data, savedAt: savedAt ?? null }))
 }
 
+function applyUpdate(update, base) {
+  return typeof update === 'function' ? update(base) : update
+}
+
+function withRollover(s) {
+  return s.lastActiveDate === todayISO() ? s : { ...s, ...applyDateRollover(s) }
+}
+
 export function usePersistedState(userId) {
   const storageKey = `inji_state_${userId}`
   const isGuest = userId === 'guest'
   const [state, setState] = useState(() => buildState(loadStoredEntry(storageKey)?.data))
   const stateRef = useRef(state)
   const savedAtRef = useRef(loadStoredEntry(storageKey)?.savedAt ?? null)
-  const [loaded, setLoaded] = useState(false)
+  // which userId the server copy has been reconciled for. Keyed by user (not
+  // a boolean) because on login child effects can call updateState before
+  // this hook's own user-switch effect has run.
+  const loadedForRef = useRef(null)
+  // edits made before the server copy has been fetched; replayed on top of
+  // whichever copy wins so they're neither lost nor allowed to make a stale
+  // local cache look "newer" than the server
+  const pendingUpdatesRef = useRef([])
   const prevUserIdRef = useRef(userId)
   const skipSaveRef = useRef(false)
   const persistQueueRef = useRef(Promise.resolve())
@@ -121,7 +136,7 @@ export function usePersistedState(userId) {
     if (prevUserIdRef.current === userId) return
     const prevUserId = prevUserIdRef.current
     prevUserIdRef.current = userId
-    setLoaded(false)
+    loadedForRef.current = null
     persistenceReadyRef.current = false
     skipSaveRef.current = true
     if (prevUserId === 'guest' && userId !== 'guest') {
@@ -145,12 +160,17 @@ export function usePersistedState(userId) {
     }
     const entry = loadStoredEntry(storageKey)
     savedAtRef.current = entry?.savedAt ?? null
-    setState(buildState(entry?.data))
+    // drop edits queued for someone else; re-apply ones already made for
+    // this user (by child effects that ran before this one)
+    pendingUpdatesRef.current = pendingUpdatesRef.current.filter((p) => p.userId === userId)
+    const nextState = pendingUpdatesRef.current.reduce((s, p) => applyUpdate(p.update, s), buildState(entry?.data))
+    stateRef.current = nextState
+    setState(nextState)
   }, [userId, storageKey])
 
   useEffect(() => {
     if (!userId || userId === 'guest') {
-      setLoaded(true)
+      loadedForRef.current = userId
       return
     }
     let active = true
@@ -163,6 +183,8 @@ export function usePersistedState(userId) {
       .then(({ data, error }) => {
         if (!active) return
         persistenceReadyRef.current = !error
+        const pending = pendingUpdatesRef.current.filter((p) => p.userId === userId).map((p) => p.update)
+        pendingUpdatesRef.current = []
         if (!error) {
           const hasServerRow = data?.data && typeof data.data === 'object'
           const serverUpdatedAt = hasServerRow && data.updated_at ? new Date(data.updated_at).getTime() : null
@@ -174,10 +196,16 @@ export function usePersistedState(userId) {
             // server record — only a *known-newer* local edit does.
             const localIsNewer = localSavedAt !== null && (serverUpdatedAt === null || localSavedAt > serverUpdatedAt)
             if (!localIsNewer) {
-              const nextState = buildState(data.data)
-              stateRef.current = nextState
+              let nextState = buildState(data.data)
               savedAtRef.current = data.updated_at ?? null
-              saveStoredEntry(storageKey, nextState, data.updated_at ?? null)
+              if (pending.length) {
+                // edits made while loading go on top of the server copy
+                nextState = pending.reduce((s, update) => applyUpdate(update, s), nextState)
+                savedAtRef.current = new Date().toISOString()
+                persistState(nextState)
+              }
+              stateRef.current = nextState
+              saveStoredEntry(storageKey, nextState, savedAtRef.current)
               setState(nextState)
             } else {
               // Our local copy is demonstrably newer — a previous write likely
@@ -189,13 +217,23 @@ export function usePersistedState(userId) {
             // whatever we have locally (e.g. migrated guest progress) to seed it.
             persistState(stateRef.current)
           }
+        } else if (pending.length) {
+          // couldn't reach the server: keep the edits and mark them as a real
+          // local change so the next successful load pushes them up
+          savedAtRef.current = new Date().toISOString()
+          saveStoredEntry(storageKey, stateRef.current, savedAtRef.current)
         }
-        setLoaded(true)
+        loadedForRef.current = userId
       })
       .catch(() => {
         if (!active) return
         persistenceReadyRef.current = false
-        setLoaded(true)
+        if (pendingUpdatesRef.current.length) {
+          pendingUpdatesRef.current = []
+          savedAtRef.current = new Date().toISOString()
+          saveStoredEntry(storageKey, stateRef.current, savedAtRef.current)
+        }
+        loadedForRef.current = userId
       })
 
     return () => {
@@ -212,14 +250,40 @@ export function usePersistedState(userId) {
     saveStoredEntry(storageKey, state, savedAtRef.current ?? undefined)
   }, [state, storageKey])
 
+  // Roll the day over if the tab stayed open past midnight. Local view only —
+  // no savedAt stamp or cloud write, so an idle tab can't overwrite newer data
+  // from another device. The next real edit persists it.
+  useEffect(() => {
+    function rollIfNewDay() {
+      const rolled = withRollover(stateRef.current)
+      if (rolled === stateRef.current) return
+      stateRef.current = rolled
+      setState(rolled)
+    }
+    const id = setInterval(rollIfNewDay, 60_000)
+    document.addEventListener('visibilitychange', rollIfNewDay)
+    return () => {
+      clearInterval(id)
+      document.removeEventListener('visibilitychange', rollIfNewDay)
+    }
+  }, [])
+
   function updateState(update) {
-    const nextState = typeof update === 'function' ? update(stateRef.current) : update
+    const nextState = applyUpdate(update, withRollover(stateRef.current))
     stateRef.current = nextState
+    if (!isGuest && loadedForRef.current !== userId) {
+      // server copy not reconciled yet: show the edit, replay it later on top
+      // of whichever copy wins, and don't stamp savedAt (that would make a
+      // stale cache look newer than the server and overwrite it)
+      pendingUpdatesRef.current.push({ userId, update })
+      setState(nextState)
+      return
+    }
     const savedAt = new Date().toISOString()
     savedAtRef.current = savedAt
     saveStoredEntry(storageKey, nextState, savedAt)
     setState(nextState)
-    if (!isGuest && loaded && persistenceReadyRef.current) persistState(nextState)
+    if (!isGuest && persistenceReadyRef.current) persistState(nextState)
   }
 
   return [state, updateState]

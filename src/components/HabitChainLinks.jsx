@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { addDays, format } from 'date-fns'
+import { addDays, format, parseISO } from 'date-fns'
 import { motion } from 'framer-motion'
 
 const LINK_SIZE = 34
@@ -8,7 +8,7 @@ const CONNECTOR_WIDTH = 14
 export default function HabitChainLinks({ startDate, targetDays, log, color = '#FF4B4B', onToggleDay }) {
   const scrollRef = useRef(null)
   const todayKey = format(new Date(), 'yyyy-MM-dd')
-  const start = new Date(startDate)
+  const start = parseISO(startDate)
 
   const links = Array.from({ length: targetDays }, (_, i) => {
     const date = addDays(start, i)

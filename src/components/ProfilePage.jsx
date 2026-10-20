@@ -2,6 +2,8 @@ import { useRef, useState } from 'react'
 import { colors } from '../utils/colors'
 import { useTranslation } from '../i18n/LanguageContext'
 import { useProfile } from '../hooks/useProfile'
+import { useAuth } from '../contexts/AuthContext'
+import { authErrorMessage } from '../utils/authErrors'
 
 function Field({ label, type = 'text', value, onChange, placeholder, autoComplete }) {
   return (
@@ -64,6 +66,7 @@ function StatusMsg({ status }) {
 export default function ProfilePage({ userId, userEmail, onSignOut }) {
   const { t, lang } = useTranslation()
   const { profile, loading, saveProfile, uploadAvatar, changePassword, changeEmail } = useProfile(userId)
+  const { resetPassword } = useAuth()
 
   // General info form
   const [firstName, setFirstName] = useState('')
@@ -119,11 +122,20 @@ export default function ProfilePage({ userId, userEmail, onSignOut }) {
     setPwSaving(true); setPwStatus(null)
     const { error } = await changePassword(oldPw, newPw)
     setPwStatus(error
-      ? { type: 'error', msg: error.message }
+      ? { type: 'error', msg: authErrorMessage(error, t) }
       : { type: 'ok',    msg: lang === 'az' ? 'Şifrə dəyişdirildi ✓' : 'Password changed ✓' }
     )
     if (!error) { setOldPw(''); setNewPw(''); setConfPw('') }
     setPwSaving(false)
+  }
+
+  async function handleForgotPw() {
+    setPwStatus(null)
+    const { error } = await resetPassword(userEmail)
+    setPwStatus(error
+      ? { type: 'error', msg: authErrorMessage(error, t) }
+      : { type: 'ok',    msg: t('authResetSent') }
+    )
   }
 
   async function handleEmailSubmit(e) {
@@ -132,7 +144,7 @@ export default function ProfilePage({ userId, userEmail, onSignOut }) {
     setEmailSaving(true); setEmailStatus(null)
     const { error } = await changeEmail(newEmail.trim())
     setEmailStatus(error
-      ? { type: 'error', msg: error.message }
+      ? { type: 'error', msg: authErrorMessage(error, t) }
       : { type: 'ok',    msg: lang === 'az' ? 'Yoxlama linki göndərildi. E-poçtunuzu yoxlayın.' : 'Confirmation link sent. Check your email.' }
     )
     if (!error) setNewEmail('')
@@ -143,8 +155,11 @@ export default function ProfilePage({ userId, userEmail, onSignOut }) {
     const file = e.target.files?.[0]
     if (!file) return
     setAvatarSaving(true)
-    await uploadAvatar(file)
+    setInfoStatus(null)
+    const { error } = await uploadAvatar(file)
+    if (error) setInfoStatus({ type: 'error', msg: error.message })
     setAvatarSaving(false)
+    e.target.value = '' // allow picking the same file again after a failure
   }
 
   return (
@@ -274,7 +289,17 @@ export default function ProfilePage({ userId, userEmail, onSignOut }) {
             autoComplete="new-password"
           />
           <StatusMsg status={pwStatus} />
-          <SaveBtn loading={pwSaving} label={lang === 'az' ? 'Şifrəni dəyişdir' : 'Change password'} />
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <SaveBtn loading={pwSaving} label={lang === 'az' ? 'Şifrəni dəyişdir' : 'Change password'} />
+            <button
+              type="button"
+              onClick={handleForgotPw}
+              className="text-[13px] underline"
+              style={{ color: colors.textSecondary }}
+            >
+              {t('authForgotPassword')}
+            </button>
+          </div>
         </form>
       </Section>
 

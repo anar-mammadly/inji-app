@@ -10,10 +10,10 @@ import Button from './ui/Button'
 const SUB_CATEGORIES = ['books', 'courses', 'skills']
 const SUB_CATEGORY_LABEL_KEYS = { books: 'subCategoryBooks', courses: 'subCategoryCourses', skills: 'subCategorySkills' }
 
-function AddGoalForm({ onAdd, onCancel }) {
+function AddGoalForm({ onAdd, onCancel, initialSubCategory = 'books' }) {
   const { t } = useTranslation()
   const [title, setTitle] = useState('')
-  const [subCategory, setSubCategory] = useState('books')
+  const [subCategory, setSubCategory] = useState(initialSubCategory)
   const [targetProgress, setTargetProgress] = useState(10)
   const [unit, setUnit] = useState('pages')
   const [targetDate, setTargetDate] = useState('')
@@ -156,8 +156,10 @@ export default function LearningPage({
 
           {adding && (
             <AddGoalForm
+              initialSubCategory={activeSub}
               onAdd={(data) => {
-                onAddGoal({ ...data, subCategory: activeSub })
+                onAddGoal(data)
+                setActiveSub(data.subCategory) // show the tab the new goal landed in
                 setAdding(false)
               }}
               onCancel={() => setAdding(false)}
