@@ -1,6 +1,5 @@
 import { forwardRef, useEffect, useRef, useState } from 'react'
 import { useDraggable } from '@dnd-kit/core'
-import { CSS } from '@dnd-kit/utilities'
 import { Check, X, Pencil } from 'lucide-react'
 import { useTranslation } from '../i18n/LanguageContext'
 import { CATEGORY_LABEL_KEYS, categoryStyles } from '../utils/categories'
@@ -15,11 +14,16 @@ function mergeRefs(refs) {
   }
 }
 
-const TaskCard = forwardRef(function TaskCard({ task, onStart, onBack, onComplete, onDelete, onEdit }, forwardedRef) {
+// `overlay` renders the floating copy shown under the pointer while dragging
+// (see KanbanBoard's DragOverlay); the original stays in place as a ghost.
+const TaskCard = forwardRef(function TaskCard({ task, onStart, onBack, onComplete, onDelete, onEdit, overlay = false }, forwardedRef) {
   const { t } = useTranslation()
   const isDone = task.col === 'done'
   const cat = categoryStyles[task.category] ?? categoryStyles.personal
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: task.id })
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: overlay ? `overlay-${task.id}` : task.id,
+    disabled: overlay,
+  })
   const [editing, setEditing] = useState(false)
   const [editValue, setEditValue] = useState(task.name)
   const inputRef = useRef(null)
@@ -33,18 +37,16 @@ const TaskCard = forwardRef(function TaskCard({ task, onStart, onBack, onComplet
     setEditing(false)
   }
 
-  const style = {
-    transform: CSS.Translate.toString(transform),
-    zIndex: isDragging ? 10 : 'auto',
-  }
+  const stateClass = overlay
+    ? 'border-blue shadow-[0_10px_24px_rgba(0,0,0,0.18)] rotate-2 cursor-grabbing'
+    : isDragging
+      ? 'border-dashed border-borderStrong opacity-40'
+      : `border-border shadow-[0_2px_0_#E5E7EB] hover:border-borderStrong ${isDone ? 'opacity-80' : ''}`
 
   return (
     <article
-      ref={mergeRefs([forwardedRef, setNodeRef])}
-      style={style}
-      className={`group rounded-2xl border-2 bg-white p-3 touch-none transition-colors ${
-        isDragging ? 'border-blue shadow-[0_6px_0_#D1D5DB]' : 'border-border shadow-[0_2px_0_#E5E7EB] hover:border-borderStrong'
-      } ${isDone ? 'opacity-80' : ''}`}
+      ref={overlay ? forwardedRef : mergeRefs([forwardedRef, setNodeRef])}
+      className={`group rounded-2xl border-2 bg-white p-3 touch-none transition-colors ${stateClass}`}
     >
       <div className="flex items-start gap-2.5">
         <button
