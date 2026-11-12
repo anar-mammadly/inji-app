@@ -150,6 +150,10 @@ p {
 .companion-cheer { animation: companion-hop 0.55s ease-out 2; }
 .companion-dizzy { animation: companion-wobble 0.7s ease-in-out 2; }
 .companion-held { transform: scale(1.07) rotate(-5deg); transition: transform 120ms ease; }
+/* time is up: a small hop every couple of seconds, asking to be noticed */
+.companion-waiting { animation: companion-ask 2.4s ease-in-out infinite; }
+.companion-dull { animation: companion-breathe 7s ease-in-out infinite; }
+.companion-stretch { animation: companion-stretch 2.4s ease-in-out infinite; }
 
 .companion-blink {
   transform-box: fill-box;
@@ -184,6 +188,16 @@ p {
 @keyframes companion-blink {
   0%, 94%, 100% { transform: scaleY(1); }
   97% { transform: scaleY(0.1); }
+}
+@keyframes companion-ask {
+  0%, 70%, 100% { transform: translateY(0); }
+  80% { transform: translateY(-7px); }
+  90% { transform: translateY(0); }
+  95% { transform: translateY(-3px); }
+}
+@keyframes companion-stretch {
+  0%, 100% { transform: scale(1, 1); }
+  50% { transform: scale(0.95, 1.08); }
 }
 @keyframes companion-twinkle {
   from { opacity: 0.45; }

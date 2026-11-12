@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Pause, Play, X } from 'lucide-react'
+import { PersonStanding, Play, X } from 'lucide-react'
 import CompanionCharacter from './CompanionCharacter'
 import { greetingEvent, pickLine } from './lines'
 import { useTranslation } from '../i18n/LanguageContext'
-import { BREAK_SECONDS, FOCUS_SECONDS, computeSecondsLeft, durationFor } from '../hooks/usePomodoroStore'
+import { isMuted, overtimeMinutes, plannedSeconds, remainingSeconds, wearLevel, wearStage } from '../lib/focusRun'
 import { colors } from '../utils/colors'
 
 const SIZE = 76
@@ -13,6 +13,24 @@ const DRAG_THRESHOLD = 5 // px of movement before a press becomes a drag
 const KEY_STEP = 24
 const TICKLE_TAPS = 5
 const TICKLE_WINDOW_MS = 2200
+const AMBIENT_GAP_MS = 8 * 60_000 // small talk (a reply to a tap) at most this often
+const SAID_KEY = 'inji_companion_said' // milestones already celebrated on this device
+
+function saidBefore(name) {
+  try {
+    const said = JSON.parse(localStorage.getItem(SAID_KEY) || '{}')
+    if (said[name]) return true
+    localStorage.setItem(SAID_KEY, JSON.stringify({ ...said, [name]: Date.now() }))
+  } catch {
+    // without storage a milestone may be repeated — harmless
+  }
+  return false
+}
+
+function clockText(seconds) {
+  const whole = Math.floor(Math.max(0, seconds))
+  return `${String(Math.floor(whole / 60)).padStart(2, '0')}:${String(whole % 60).padStart(2, '0')}`
+}
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v))
 
@@ -26,19 +44,22 @@ function useViewport() {
   return size
 }
 
-// Sədəf: a small companion that sits wherever you drag it, follows the focus
-// timer on every page, and speaks only when something happens — a session
-// starting or ending, a break, a finished task. During focus it stays quiet.
-export default function Companion({
-  initialPos,
-  onMove,
-  onDismiss,
-  activeSession,
-  beadCount,
-  dailyGoal,
-  onStartFocus,
-  onToggleTimer,
-}) {
+// Sədəf: a small companion that sits wherever you drag it and follows the
+// focus timer on every page.
+//
+//   • While you focus it is quiet.
+//   • When a block is over it asks you to stand up — and the longer you stay
+//     seated, the worse it looks: first it loses its shine and gathers dust,
+//     then its shell starts to close, and finally it shuts completely.
+//     Standing up opens it again.
+//   • During the break it suggests something to do, walking or at the desk.
+//   • It speaks only when something happens, never just to fill a silence.
+//
+// `timer` is the object from usePomodoroStore; `timerEvent` is the latest
+// reminder fired by usePomodoroTicker ({ type, at }).
+export default function Companion({ initialPos, onMove, onDismiss, timer, timerEvent, beadCount, dailyGoal }) {
+  const { activeSession, settings, run, totals, lastRun } = timer
+  const muted = isMuted({ focusMuteUntil: timer.muteUntil })
   const { t, lang } = useTranslation()
   const viewport = useViewport()
   const [pos, setPos] = useState(initialPos)
@@ -56,10 +77,13 @@ export default function Companion({
   const timers = useRef({})
   const langRef = useRef(lang)
   langRef.current = lang
+  const facts = useRef({ settings, run, totals, lastRun })
+  facts.current = { settings, run, totals, lastRun }
+  const lastAmbient = useRef(0)
 
   const spanX = Math.max(1, viewport.w - SIZE - EDGE * 2)
   const spanY = Math.max(1, viewport.h - SIZE - EDGE * 2)
-  const left = EDGE + clamp01(pos.x) * spanX
+  const left_ = EDGE + clamp01(pos.x) * spanX
   const top = EDGE + clamp01(pos.y) * spanY
 
   // ---- speech ---------------------------------------------------------------
@@ -87,28 +111,68 @@ export default function Companion({
     }
   }, [say])
 
-  // session changes: started, switched to a break, back to focus, paused, stopped
+  // What just happened to the session? Start, stand-up, back to work, pause,
+  // snooze, the end of the run, or a block that was abandoned.
   const seen = useRef({ session: activeSession, beadCount })
   useEffect(() => {
     const before = seen.current.session
     const now = activeSession
     seen.current.session = now
     if (before === now) return
-    if (!before && now) {
-      if (now.status === 'running' && now.mode === 'focus') say('focusStart', { min: FOCUS_SECONDS / 60 })
-    } else if (before && !now) {
-      say('cancelled')
-    } else if (before.mode !== now.mode) {
-      if (now.mode === 'break') {
-        react('cheer', 1600)
-        say('breakStart', { min: BREAK_SECONDS / 60 }, 6500)
-      } else {
-        say('focusResume')
+    const f = facts.current
+    const left = Math.max(0, f.settings.blocks - Math.round(f.run.progress))
+
+    if (!now) {
+      if (before?.mode === 'break') {
+        react('cheer', 1800)
+        say(f.lastRun?.first ? 'firstRun' : 'runDone', undefined, 6000)
+      } else if (before) {
+        say('cancelled')
       }
-    } else if (before.status !== now.status) {
-      say(now.status === 'paused' ? 'paused' : 'resumed', undefined, 3000)
+      return
+    }
+    if (now.mode === 'focus' && before?.mode !== 'focus') {
+      if (now.status !== 'running') return
+      if (!before) say(f.run.blocks === f.settings.blocks - 1 ? 'lastBlock' : 'focusStart', { min: f.settings.focusMin })
+      else say(left <= 1 ? 'lastBlock' : Math.random() < 0.25 ? 'fact' : 'backToFocus', { left })
+      return
+    }
+    if (now.mode === 'break' && before?.mode === 'focus') {
+      react('cheer', 1600)
+      const milestone =
+        now.earned &&
+        ((f.totals.blocks === 50 && !saidBefore('blocks50') && 'blocks50') ||
+          (f.totals.blocks === 100 && !saidBefore('blocks100') && 'blocks100') ||
+          (f.totals.streak?.days >= 7 && !saidBefore('streak7') && 'streak7'))
+      const event = milestone || (now.long ? 'longBreak' : now.earned ? 'standUp' : 'standUpEarly')
+      say(event, { min: Math.round(plannedSeconds(now) / 60) }, 6000)
+      return
+    }
+    if (before && before.id === now.id) {
+      if (!before.snoozed && now.snoozed) say('snooze')
+      else if (before.status !== now.status) say(now.status === 'paused' ? 'paused' : 'resumed', undefined, 3000)
     }
   }, [activeSession, say, react])
+
+  // reminders from the app's ticker: block nearly over, over, still sitting
+  useEffect(() => {
+    if (!timerEvent) return
+    if (timerEvent.type === 'focusSoon') say('focusSoon')
+    else if (timerEvent.type === 'focusDone') {
+      react('cheer', 900)
+      say('focusDone', { min: facts.current.settings.breakMin }, 6500)
+    } else if (timerEvent.type === 'overtime') say('overtime', undefined, 6500)
+    else if (timerEvent.type === 'breakDone') say('breakDone', undefined, 6000)
+  }, [timerEvent, say, react])
+
+  // quiet mode switched on or off
+  const wasMuted = useRef(muted)
+  useEffect(() => {
+    if (wasMuted.current === muted) return
+    wasMuted.current = muted
+    const until = timer.muteUntil ? new Date(timer.muteUntil).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }) : ''
+    say(muted ? 'muteOn' : 'muteOff', { time: until })
+  }, [muted, timer.muteUntil, say])
 
   // a finished task drops a pearl in the jar — worth a cheer
   useEffect(() => {
@@ -120,10 +184,11 @@ export default function Companion({
     }
   }, [beadCount, dailyGoal, say, react])
 
-  // While a session runs: redraw the ring every second, and speak at a few
-  // fixed moments (last minute of focus; twice during a break).
+  // While a session runs: redraw every second, announce each new stage of
+  // wear once, and offer two things to do during a break.
   const spoken = useRef({ id: null, marks: new Set() })
   const running = activeSession?.status === 'running'
+  const speed = activeSession?.speed || 1
   useEffect(() => {
     if (!running) return
     const id = setInterval(() => {
@@ -131,23 +196,25 @@ export default function Companion({
       const session = seen.current.session
       if (!session || session.status !== 'running') return
       if (spoken.current.id !== session.id) spoken.current = { id: session.id, marks: new Set() }
-      const total = durationFor(session.mode)
-      const leftSec = computeSecondsLeft(session)
-      const done = 1 - leftSec / total
       const once = (mark, fn) => {
         if (spoken.current.marks.has(mark)) return
         spoken.current.marks.add(mark)
         fn()
       }
       if (session.mode === 'focus') {
-        if (leftSec <= 60 && leftSec > 3 && total > 120) once('almost', () => say('focusAlmost'))
+        const stage = wearStage(overtimeMinutes(session))
+        if (stage === 'dull') once('dull', () => say('wearDull', undefined, 5500))
+        else if (stage === 'closing') once('closing', () => say('wearClosing', undefined, 6500))
+        else if (stage === 'shut') once('shut', () => say('wearShut', undefined, 7000))
       } else {
-        if (done >= 0.2) once('tip1', () => say('breakTip', undefined, 7000))
-        if (done >= 0.6) once('tip2', () => say('breakTip', undefined, 7000))
+        const done = 1 - remainingSeconds(session) / plannedSeconds(session)
+        const tip = session.atDesk ? 'stretchTip' : 'walkTip'
+        if (done >= 0.2 && done < 1) once('tip1', () => say(tip, undefined, 7000))
+        if (done >= 0.6 && done < 1) once('tip2', () => say(tip, undefined, 7000))
       }
-    }, 1000)
+    }, speed > 1 ? 250 : 1000)
     return () => clearInterval(id)
-  }, [running, say])
+  }, [running, speed, say])
 
   // ---- pointer + keyboard -----------------------------------------------------
 
@@ -159,7 +226,7 @@ export default function Companion({
 
   function onPointerDown(e) {
     if (e.pointerType === 'mouse' && e.button !== 0) return
-    drag.current = { id: e.pointerId, startX: e.clientX, startY: e.clientY, left, top, moved: false, last: pos }
+    drag.current = { id: e.pointerId, startX: e.clientX, startY: e.clientY, left: left_, top, moved: false, last: pos }
     e.currentTarget.setPointerCapture?.(e.pointerId)
   }
 
@@ -207,7 +274,10 @@ export default function Companion({
       return
     }
     setMenuOpen((open) => !open)
-    if (taps.current.length === 1 && !speech) say('tap', undefined, 2200)
+    if (taps.current.length === 1 && !speech && now - lastAmbient.current > AMBIENT_GAP_MS) {
+      lastAmbient.current = now
+      say('tap', undefined, 2200)
+    }
   }
 
   function onKeyDown(e) {
@@ -215,7 +285,7 @@ export default function Companion({
     const delta = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[e.key]
     if (delta) {
       e.preventDefault()
-      onMove(moveTo(left + delta[0], top + delta[1]))
+      onMove(moveTo(left_ + delta[0], top + delta[1]))
     } else if (e.key === 'Escape') {
       if (menuOpen) setMenuOpen(false)
       else onDismiss()
@@ -234,25 +304,38 @@ export default function Companion({
 
   // ---- what to show -----------------------------------------------------------
 
-  const secondsLeft = activeSession ? computeSecondsLeft(activeSession) : 0
-  const total = activeSession ? durationFor(activeSession.mode) : FOCUS_SECONDS
-  const progress = activeSession ? 1 - secondsLeft / total : null
-  const mood = dragging
-    ? 'held'
-    : flash || (!activeSession ? 'idle' : activeSession.status === 'paused' ? 'sleepy' : activeSession.mode)
+  const left = activeSession ? remainingSeconds(activeSession) : 0
+  const total = activeSession ? plannedSeconds(activeSession) : settings.focusMin * 60
+  const overMin = overtimeMinutes(activeSession)
+  const over = activeSession?.mode === 'focus' && left < 0
+  const wear = wearLevel(overMin)
+  const progress = activeSession ? Math.min(1, 1 - Math.max(0, left) / total) : null
 
-  const whole = Math.floor(Math.max(0, secondsLeft))
-  const clock = `${String(Math.floor(whole / 60)).padStart(2, '0')}:${String(whole % 60).padStart(2, '0')}`
+  const sessionMood = !activeSession
+    ? 'idle'
+    : activeSession.status === 'paused'
+      ? 'sleepy'
+      : activeSession.mode === 'break'
+        ? activeSession.atDesk
+          ? 'stretch'
+          : 'break'
+        : wearStage(overMin) || 'focus'
+  const mood = dragging ? 'held' : flash || sessionMood
+
+  const clock = over ? `+${clockText(-left)}` : clockText(left)
 
   // bubble and menu open towards the middle of the screen
   const above = top > viewport.h * 0.42
-  const alignRight = left + SIZE / 2 > viewport.w / 2
+  const alignRight = left_ + SIZE / 2 > viewport.w / 2
 
+  // one action, the same one the timer card offers at this moment
   const primary = !activeSession
-    ? { label: t('companionStart'), icon: Play, action: onStartFocus }
-    : running
-      ? { label: t('pomodoroPause'), icon: Pause, action: onToggleTimer }
-      : { label: t('pomodoroResume'), icon: Play, action: onToggleTimer }
+    ? { label: t('companionStart'), icon: Play, action: () => timer.startSession() }
+    : activeSession.mode === 'break'
+      ? { label: t('backToWork'), icon: Play, action: timer.backToFocus }
+      : running
+        ? { label: t('standUp'), icon: PersonStanding, action: timer.standUp }
+        : { label: t('pomodoroResume'), icon: Play, action: timer.toggleRunning }
   const PrimaryIcon = primary.icon
 
   const bubble = speech && !dragging && (
@@ -277,7 +360,7 @@ export default function Companion({
         }}
         className="press inline-flex h-9 items-center gap-1.5 rounded-xl bg-accent px-3 text-[13px] font-extrabold text-onAccent shadow-[0_3px_0_#46A302]"
       >
-        <PrimaryIcon size={14} strokeWidth={3} fill="currentColor" />
+        <PrimaryIcon size={15} strokeWidth={2.8} />
         {primary.label}
       </button>
       <button
@@ -296,7 +379,7 @@ export default function Companion({
     <motion.div
       ref={rootRef}
       className="fixed z-[45]"
-      style={{ left, top, width: SIZE, height: SIZE }}
+      style={{ left: left_, top, width: SIZE, height: SIZE }}
       initial={{ opacity: 0, scale: 0.6 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.6 }}
@@ -329,11 +412,17 @@ export default function Companion({
         <CompanionCharacter
           mood={mood}
           progress={progress}
-          ringColor={activeSession?.mode === 'break' ? colors.yellow : colors.accent}
+          ringColor={over ? colors.coral : activeSession?.mode === 'break' ? colors.yellow : colors.accent}
+          dull={dragging ? 0 : wear.dull}
+          lid={flash === 'cheer' ? 0 : wear.lid}
           size={SIZE}
         />
         {activeSession && (
-          <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full border-2 border-border bg-surface px-1.5 text-[11px] font-extrabold leading-[18px] tabular-nums text-textPrimary">
+          <span
+            className={`absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full border-2 bg-surface px-1.5 text-[11px] font-extrabold leading-[18px] tabular-nums ${
+              over ? 'border-[#FFB3B3] text-coralInk' : 'border-border text-textPrimary'
+            }`}
+          >
             {clock}
           </span>
         )}

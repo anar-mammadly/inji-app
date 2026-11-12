@@ -7,13 +7,15 @@ import PomodoroTimer from './components/PomodoroTimer'
 import KanbanBoard from './components/KanbanBoard'
 import BoardSwitcher from './components/BoardSwitcher'
 import GuestImportPrompt from './components/GuestImportPrompt'
+import RunSummary from './components/RunSummary'
 import PullToRefreshIndicator from './components/PullToRefreshIndicator'
 import { PearlIcon } from './companion/CompanionCharacter'
 import { useCompanionPrefs } from './companion/useCompanionPrefs'
 import { usePullToRefresh } from './hooks/usePullToRefresh'
 import { usePersistedState } from './hooks/usePersistedState'
 import { useTaskStore } from './hooks/useTaskStore'
-import { usePomodoroStore, durationFor } from './hooks/usePomodoroStore'
+import { usePomodoroStore } from './hooks/usePomodoroStore'
+import { plannedSeconds, remainingSeconds } from './lib/focusRun'
 import { usePomodoroTicker } from './hooks/usePomodoroTicker'
 import { useHabitStore } from './hooks/useHabitStore'
 import { useLearningStore } from './hooks/useLearningStore'
@@ -101,16 +103,8 @@ export default function App() {
     deleteBoard,
   } = useTaskStore(state, setState)
 
-  const {
-    activeSession,
-    pomodoroHistory,
-    computeSecondsLeft,
-    startSession,
-    toggleRunning,
-    advanceToNextMode,
-    resetSession,
-    cancelSession,
-  } = usePomodoroStore(state, setState)
+  const timer = usePomodoroStore(state, setState)
+  const { activeSession, pomodoroHistory, cancelSession } = timer
 
   const {
     habits,
@@ -163,21 +157,26 @@ export default function App() {
 
   const companion = useCompanionPrefs()
 
-  // The timer ends its sessions here, not in the timer card, so it keeps
-  // working on every page. If the tab is in the background and notifications
-  // were already allowed (for learning reminders), say so there too.
-  const notifyTimer = useCallback(
-    (finishedMode) => {
+  // The timer is watched here, not in the timer card, so its reminders work
+  // on every page. Each one is handed to the companion (if it is on screen)
+  // and, when the tab is in the background and notifications were already
+  // allowed, shown as a notification too.
+  const [timerEvent, setTimerEvent] = useState(null)
+  const onTimerEvent = useCallback(
+    (type, { muted }) => {
+      setTimerEvent({ type, at: Date.now() })
+      const key = { focusDone: 'notifyFocusDone', overtime: 'notifyOvertime', breakDone: 'notifyBreakDone', runDone: 'notifyRunDone' }[type]
+      if (!key || muted) return
       if (document.visibilityState !== 'hidden' || !canUseNotifications() || Notification.permission !== 'granted') return
       try {
-        new Notification('inji', { body: t(finishedMode === 'focus' ? 'notifyFocusDone' : 'notifyBreakDone') })
+        new Notification('inji', { body: t(key), tag: 'inji-timer' })
       } catch {
         // some browsers only allow notifications from a service worker
       }
     },
     [t],
   )
-  usePomodoroTicker(activeSession, advanceToNextMode, notifyTimer)
+  usePomodoroTicker(state, timer, onTimerEvent)
 
   const handleRefresh = useCallback(async () => {
     await sync.flush() // don't reload over a save that hasn't gone out yet
@@ -224,7 +223,7 @@ export default function App() {
 
   function handlePomodoroCancel() {
     const session = activeSession
-    const hadProgress = session && session.mode === 'focus' && computeSecondsLeft(session) < durationFor('focus')
+    const hadProgress = session && session.mode === 'focus' && remainingSeconds(session) < plannedSeconds(session)
     if (hadProgress && jarRef.current) {
       const rect = jarRef.current.getBoundingClientRect()
       const burstId = `break-${Date.now()}`
@@ -287,6 +286,11 @@ export default function App() {
   }
 
   const boardTasks = tasks.filter((t) => t.boardId === activeBoardId)
+
+  // the summary of a run is for the moment it ends — not for another device
+  // that syncs it hours later
+  const lastRun = timer.lastRun
+  const freshRun = lastRun && !lastRun.seen && Date.now() - Date.parse(lastRun.endedAt) < 15 * 60_000 ? lastRun : null
 
   return (
     <div className="min-h-dvh bg-bg md:flex">
@@ -414,12 +418,8 @@ export default function App() {
                 className="order-3 md:order-none flex rounded-3xl bg-surface border-2 border-border p-4 sm:p-5 md:col-start-2 md:row-start-1 lg:col-start-1 lg:row-start-2 lg:min-h-0 lg:overflow-y-auto no-scrollbar"
               >
                 <PomodoroTimer
-                  activeSession={activeSession}
-                  computeSecondsLeft={computeSecondsLeft}
+                  timer={timer}
                   tasks={boardTasks.filter((t) => t.col === 'inprog')}
-                  onStart={startSession}
-                  onToggle={toggleRunning}
-                  onReset={resetSession}
                   onCancel={handlePomodoroCancel}
                   footer={
                     <button
@@ -512,11 +512,10 @@ export default function App() {
               initialPos={companion.pos}
               onMove={companion.setPos}
               onDismiss={companion.dismiss}
-              activeSession={activeSession}
+              timer={timer}
+              timerEvent={timerEvent}
               beadCount={beadCount}
               dailyGoal={dailyGoal}
-              onStartFocus={() => startSession()}
-              onToggleTimer={toggleRunning}
             />
           )}
         </AnimatePresence>
@@ -537,6 +536,8 @@ export default function App() {
           ) : null}
         </AnimatePresence>
       </Suspense>
+
+      <RunSummary run={freshRun} onClose={timer.dismissSummary} />
 
       <GuestImportPrompt
         summary={user ? sync.guestImport : null}

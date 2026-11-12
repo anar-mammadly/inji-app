@@ -8,8 +8,8 @@ It runs in the browser. Without an account everything stays on your device; with
 
 - **Board** — a Kanban board (to do, in progress, done) per board you create. Move tasks with their buttons, by dragging, or from the keyboard (focus a task, Space to pick it up, arrow keys, Space to drop).
 - **Jar and goals** — one pearl per finished task, a daily and a weekly goal, and a streak of consecutive active days. The jar draws up to 30 pearls; the count keeps going.
-- **Focus timer** — 25 minutes of focus, 5 of break. It keeps running whichever page you are on.
-- **Sədəf, the companion** — a pearl you can call onto the screen and drag anywhere. It follows the focus timer, tells you when to stand up, suggests a stretch during breaks and cheers when a task is done. It speaks Azerbaijani or English with the rest of the app, and stays quiet while you focus.
+- **Focus session** — a run of focus blocks (four of 25 minutes by default) with movement breaks between them. A block does not end by itself: when its time is up the clock runs into overtime until you press **Stand up**, with reminders that come further and further apart and one "5 more minutes". A break fills one pearl on the session's string in proportion to how much of it you really took; a long break follows every fourth block. When the string is full the session is summarised. Lengths are adjustable, sounds can be muted for an hour, and it all keeps running whichever page you are on.
+- **Sədəf, the companion** — a pearl you can call onto the screen and drag anywhere. It is quiet while you focus. When a block is over and you stay seated it wears down: first it loses its shine and gathers dust, then its shell starts to close, and after about fifty minutes it shuts — standing up opens it again. During a break it suggests something to do, a walk or, if you say you are staying at your desk, a stretch. It speaks Azerbaijani or English with the rest of the app.
 - **Plan** — a week of days, each with its own to-dos and optional times, plus goals with progress.
 - **Calendar** — events per day.
 - **Habits** — a chain of days per habit, with a target length.
@@ -81,6 +81,9 @@ supabase/                 SQL for the database and storage
 ```
 
 To change how the companion looks, edit `src/companion/CompanionCharacter.jsx`; what it says is in `src/companion/lines.js`.
+The rules of the focus session (overtime, wear stages, reminders, how breaks fill the run) are in `src/lib/focusRun.js`, with tests beside it.
+
+Add `?fast` to the address to run a minute in a second and try a whole session quickly.
 
 ## Deploy
 

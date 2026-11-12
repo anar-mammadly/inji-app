@@ -14,9 +14,9 @@ describe('companion lines', () => {
 
   it('fills in variables and never repeats a line back to back', () => {
     const memory = {}
-    expect(pickLine('en', 'focusStart', memory, { min: 25 }, () => 0)).toBe('Off we go. 25 minutes, one task.')
+    expect(pickLine('en', 'focusStart', memory, { min: 25 }, () => 0)).toBe('25 minutes, starting now. Good luck!')
     // same random pick again → moves on to the next line instead
-    expect(pickLine('en', 'focusStart', memory, { min: 25 }, () => 0)).not.toContain('Off we go')
+    expect(pickLine('en', 'focusStart', memory, { min: 25 }, () => 0)).not.toContain('starting now')
   })
 
   it('greets by time of day', () => {

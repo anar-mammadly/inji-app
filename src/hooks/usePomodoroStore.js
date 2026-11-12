@@ -1,148 +1,62 @@
 import { generateId } from '../utils/id'
+import { todayISO } from '../utils/day'
 import { POMODORO_HISTORY_LIMIT } from '../lib/appState'
+import {
+  backToFocus,
+  cancelFocus,
+  changeSetting,
+  emptyRun,
+  emptyTotals,
+  finishIfComplete,
+  focusSettings,
+  plannedSeconds,
+  remainingSeconds,
+  resetRun,
+  snooze,
+  standUp,
+  startFocus,
+  toggleAtDesk,
+  toggleMute,
+  togglePause,
+} from '../lib/focusRun'
 
-export const FOCUS_SECONDS = 25 * 60
-export const BREAK_SECONDS = 5 * 60
-
-export function durationFor(mode) {
-  return mode === 'focus' ? FOCUS_SECONDS : BREAK_SECONDS
-}
-
-// Standalone (non-hook) so the timer card, the ticker and the companion can
-// all read the same clock without sharing a component.
+// Seconds left on the clock, never below zero (overtime is read separately).
 export function computeSecondsLeft(session) {
-  if (!session) return 0
-  if (session.status === 'paused') return session.secondsLeftAtStart
-  const elapsed = (Date.now() - new Date(session.startedAt).getTime()) / 1000
-  return Math.max(0, session.secondsLeftAtStart - elapsed)
+  return Math.max(0, remainingSeconds(session))
 }
 
+export { plannedSeconds }
+
+// `?fast` in the address runs a minute in a second — for trying the whole
+// flow (overtime, wear, breaks, the end of a run) without waiting.
+const SPEED = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('fast') ? 60 : 1
+
+// The focus timer's state and actions. All rules live in lib/focusRun.js;
+// this hook only supplies "now", ids and today's date.
 export function usePomodoroStore(state, setState) {
-  const activeSession = state.activeSession || null
-  const pomodoroHistory = state.pomodoroHistory || []
-
-  function startSession(taskId = null) {
-    setState((s) => ({
-      ...s,
-      activeSession: {
-        id: generateId(),
-        taskId,
-        mode: 'focus',
-        startedAt: new Date().toISOString(),
-        secondsLeftAtStart: FOCUS_SECONDS,
-        status: 'running',
-      },
-    }))
-  }
-
-  function toggleRunning() {
-    setState((s) => {
-      const session = s.activeSession
-      if (!session) return s
-      if (session.status === 'running') {
-        return {
-          ...s,
-          activeSession: { ...session, status: 'paused', secondsLeftAtStart: computeSecondsLeft(session) },
-        }
-      }
-      return {
-        ...s,
-        activeSession: { ...session, status: 'running', startedAt: new Date().toISOString() },
-      }
-    })
-  }
-
-  function advanceToNextMode() {
-    setState((s) => {
-      const session = s.activeSession
-      // only a running session that has actually run out can advance — this
-      // updater may be replayed on a fresher server copy where it hasn't
-      if (!session || session.status !== 'running' || computeSecondsLeft(session) > 0) return s
-
-      const nextHistory =
-        session.mode === 'focus'
-          ? [
-              ...(s.pomodoroHistory || []),
-              {
-                id: session.id,
-                taskId: session.taskId,
-                startedAt: session.startedAt,
-                endedAt: new Date().toISOString(),
-                completed: true,
-                mode: 'focus',
-              },
-            ].slice(-POMODORO_HISTORY_LIMIT)
-          : s.pomodoroHistory || []
-
-      const nextMode = session.mode === 'focus' ? 'break' : 'focus'
-      return {
-        ...s,
-        pomodoroHistory: nextHistory,
-        activeSession: {
-          id: generateId(),
-          taskId: nextMode === 'focus' ? session.taskId : null,
-          mode: nextMode,
-          startedAt: new Date().toISOString(),
-          secondsLeftAtStart: durationFor(nextMode),
-          status: 'running',
-        },
-      }
-    })
-  }
-
-  function resetSession() {
-    setState((s) => {
-      const mode = s.activeSession?.mode || 'focus'
-      const taskId = s.activeSession?.taskId ?? null
-      return {
-        ...s,
-        activeSession: {
-          id: generateId(),
-          taskId,
-          mode,
-          startedAt: new Date().toISOString(),
-          secondsLeftAtStart: durationFor(mode),
-          status: 'paused',
-        },
-      }
-    })
-  }
-
-  // Abandons the current focus session: logs it as not-completed and clears
-  // it (no fresh session is started, unlike resetSession). The caller is
-  // responsible for deciding whether this counts as a "break the pending
-  // bead" event — see App.jsx's handlePomodoroCancel.
-  function cancelSession() {
-    setState((s) => {
-      const session = s.activeSession
-      if (!session) return s
-      const hadProgress = computeSecondsLeft(session) < durationFor(session.mode)
-      const nextHistory =
-        session.mode === 'focus' && hadProgress
-          ? [
-              ...(s.pomodoroHistory || []),
-              {
-                id: session.id,
-                taskId: session.taskId,
-                startedAt: session.startedAt,
-                endedAt: new Date().toISOString(),
-                completed: false,
-                mode: 'focus',
-              },
-            ].slice(-POMODORO_HISTORY_LIMIT)
-          : s.pomodoroHistory || []
-      return { ...s, activeSession: null, pomodoroHistory: nextHistory }
-    })
-  }
+  const at = () => ({ now: Date.now(), id: generateId(), today: todayISO(), historyLimit: POMODORO_HISTORY_LIMIT })
 
   return {
-    activeSession,
-    pomodoroHistory,
+    activeSession: state.activeSession || null,
+    pomodoroHistory: state.pomodoroHistory || [],
+    settings: focusSettings(state),
+    run: state.focusRun || emptyRun(),
+    totals: state.focusTotals || emptyTotals(),
+    lastRun: state.lastFocusRun || null,
+    muteUntil: state.focusMuteUntil || null,
     computeSecondsLeft,
-    startSession,
-    toggleRunning,
-    advanceToNextMode,
-    resetSession,
-    cancelSession,
+
+    startSession: (taskId = null) => setState((s) => startFocus(s, { ...at(), taskId, speed: SPEED })),
+    standUp: () => setState((s) => standUp(s, at())),
+    backToFocus: () => setState((s) => backToFocus(s, at())),
+    finishIfComplete: () => setState((s) => finishIfComplete(s, at())),
+    snooze: () => setState((s) => snooze(s, at())),
+    toggleRunning: () => setState((s) => togglePause(s, at())),
+    cancelSession: () => setState((s) => cancelFocus(s, at())),
+    resetRun: () => setState((s) => resetRun(s)),
+    toggleAtDesk: () => setState((s) => toggleAtDesk(s)),
+    changeSetting: (key, direction) => setState((s) => changeSetting(s, key, direction)),
+    toggleMute: () => setState((s) => toggleMute(s, at())),
+    dismissSummary: () => setState((s) => (s.lastFocusRun ? { ...s, lastFocusRun: { ...s.lastFocusRun, seen: true } } : s)),
   }
 }

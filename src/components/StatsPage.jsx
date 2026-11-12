@@ -3,7 +3,6 @@ import { useTranslation } from '../i18n/LanguageContext'
 import { CATEGORIES, CATEGORY_LABEL_KEYS, categoryStyles } from '../utils/categories'
 import { getBoardName } from '../utils/boards'
 import { colors } from '../utils/colors'
-import { FOCUS_SECONDS } from '../hooks/usePomodoroStore'
 import ConfirmButton from './ui/ConfirmButton'
 import ProgressBar from './ui/ProgressBar'
 import Card from './ui/Card'
@@ -33,8 +32,10 @@ export default function StatsPage({ categoryCounts, completedTasks = [], onReset
   const { t } = useTranslation()
   const total = CATEGORIES.reduce((sum, c) => sum + (categoryCounts[c] || 0), 0)
   const boardTotal = tasks.filter((task) => task.col === 'done').length
-  const focusDone = pomodoroHistory.filter((p) => p.completed).length
-  const focusMinutes = Math.round((focusDone * FOCUS_SECONDS) / 60)
+  const finished = pomodoroHistory.filter((p) => p.completed)
+  const focusDone = finished.length
+  // entries from before block lengths became adjustable have no `minutes`
+  const focusMinutes = finished.reduce((sum, p) => sum + (p.minutes ?? 25), 0)
 
   return (
     <Page width="normal">
