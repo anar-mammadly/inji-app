@@ -1,4 +1,5 @@
-// Maps Supabase auth errors to translation keys; falls back to the raw message.
+// Maps Supabase (and the app's own) error codes to translation keys; falls
+// back to the raw message.
 const CODE_TO_KEY = {
   invalid_credentials: 'authInvalidCredentials',
   email_not_confirmed: 'authEmailNotConfirmed',
@@ -10,6 +11,9 @@ const CODE_TO_KEY = {
   weak_password: 'authPasswordTooShort',
   otp_expired: 'authLinkExpired',
   wrong_current_password: 'authWrongCurrentPassword',
+  avatar_type: 'avatarWrongType',
+  avatar_too_large: 'avatarTooLarge',
+  account_delete_unavailable: 'accountDeleteUnavailable',
 }
 
 export function authErrorMessage(error, t) {

@@ -1,9 +1,5 @@
-import { format } from 'date-fns'
 import { generateId } from '../utils/id'
-
-function todayISO() {
-  return format(new Date(), 'yyyy-MM-dd')
-}
+import { todayISO } from '../utils/day'
 
 export function useLearningStore(state, setState) {
   const learningGoals = state.learningGoals || []

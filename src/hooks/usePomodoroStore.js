@@ -1,4 +1,5 @@
 import { generateId } from '../utils/id'
+import { POMODORO_HISTORY_LIMIT } from '../lib/appState'
 
 export const FOCUS_SECONDS = 25 * 60
 export const BREAK_SECONDS = 5 * 60
@@ -7,23 +8,13 @@ export function durationFor(mode) {
   return mode === 'focus' ? FOCUS_SECONDS : BREAK_SECONDS
 }
 
-// Standalone (non-hook) version so usePersistedState can resolve a stale
-// session on load without needing a component instance.
+// Standalone (non-hook) so the timer card, the ticker and the companion can
+// all read the same clock without sharing a component.
 export function computeSecondsLeft(session) {
   if (!session) return 0
   if (session.status === 'paused') return session.secondsLeftAtStart
   const elapsed = (Date.now() - new Date(session.startedAt).getTime()) / 1000
   return Math.max(0, session.secondsLeftAtStart - elapsed)
-}
-
-// Unclamped: how far past its natural end this running session is. Used to
-// tell "just finished while the tab was away" (small overshoot, handled by
-// the normal onModeComplete flow) apart from "left running and never came
-// back" (large overshoot, resolved as abandoned on next load).
-export function computeOvershootSeconds(session) {
-  if (!session || session.status !== 'running') return 0
-  const elapsed = (Date.now() - new Date(session.startedAt).getTime()) / 1000
-  return elapsed - session.secondsLeftAtStart
 }
 
 export function usePomodoroStore(state, setState) {
@@ -80,7 +71,7 @@ export function usePomodoroStore(state, setState) {
                 completed: true,
                 mode: 'focus',
               },
-            ]
+            ].slice(-POMODORO_HISTORY_LIMIT)
           : s.pomodoroHistory || []
 
       const nextMode = session.mode === 'focus' ? 'break' : 'focus'
@@ -138,7 +129,7 @@ export function usePomodoroStore(state, setState) {
                 completed: false,
                 mode: 'focus',
               },
-            ]
+            ].slice(-POMODORO_HISTORY_LIMIT)
           : s.pomodoroHistory || []
       return { ...s, activeSession: null, pomodoroHistory: nextHistory }
     })

@@ -1,46 +1,69 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import Navbar from './components/Navbar'
-import Jar from './components/Jar'
+import Jar, { pearlBackground } from './components/Jar'
 import Stats from './components/Stats'
 import PomodoroTimer from './components/PomodoroTimer'
 import KanbanBoard from './components/KanbanBoard'
 import BoardSwitcher from './components/BoardSwitcher'
-import StatsPage from './components/StatsPage'
-import HabitsPage from './components/HabitsPage'
-import LearningPage from './components/LearningPage'
-import CalendarPage from './components/CalendarPage'
-import NotesPage from './components/NotesPage'
-import PlanPage from './components/PlanPage'
-import ProfilePage from './components/ProfilePage'
-import AuthModal from './components/AuthModal'
-import ResetPasswordModal from './components/ResetPasswordModal'
+import GuestImportPrompt from './components/GuestImportPrompt'
 import PullToRefreshIndicator from './components/PullToRefreshIndicator'
+import { PearlIcon } from './companion/CompanionCharacter'
+import { useCompanionPrefs } from './companion/useCompanionPrefs'
 import { usePullToRefresh } from './hooks/usePullToRefresh'
 import { usePersistedState } from './hooks/usePersistedState'
 import { useTaskStore } from './hooks/useTaskStore'
 import { usePomodoroStore, durationFor } from './hooks/usePomodoroStore'
+import { usePomodoroTicker } from './hooks/usePomodoroTicker'
 import { useHabitStore } from './hooks/useHabitStore'
 import { useLearningStore } from './hooks/useLearningStore'
 import { useCalendarStore } from './hooks/useCalendarStore'
 import { useNotesStore } from './hooks/useNotesStore'
 import { usePlanStore } from './hooks/usePlanStore'
-import { useReminders } from './hooks/useReminders'
+import { canUseNotifications, useReminders } from './hooks/useReminders'
 import { useProfile } from './hooks/useProfile'
 import { useAuth } from './contexts/AuthContext'
 import { beadColors, colors } from './utils/colors'
-import { pearlBackground } from './components/Jar'
 import { formatBakuDay } from './utils/bakuDate'
 import { useBakuClock } from './hooks/useBakuClock'
 import { scheduleDropSound, playBeadBreakSound } from './utils/sound'
 import { authErrorMessage } from './utils/authErrors'
 import { useTranslation } from './i18n/LanguageContext'
 
+// Only the Board is needed to draw the first screen; every other page, the
+// sign-in dialogs and the companion load when they are first opened.
+const StatsPage = lazy(() => import('./components/StatsPage'))
+const HabitsPage = lazy(() => import('./components/HabitsPage'))
+const LearningPage = lazy(() => import('./components/LearningPage'))
+const CalendarPage = lazy(() => import('./components/CalendarPage'))
+const NotesPage = lazy(() => import('./components/NotesPage'))
+const PlanPage = lazy(() => import('./components/PlanPage'))
+const ProfilePage = lazy(() => import('./components/ProfilePage'))
+const AuthModal = lazy(() => import('./components/AuthModal'))
+const ResetPasswordModal = lazy(() => import('./components/ResetPasswordModal'))
+const Companion = lazy(() => import('./companion/Companion'))
+
 // isolated so the clock's per-second tick doesn't re-render the whole app
 function BakuToday() {
   const { lang } = useTranslation()
   const now = useBakuClock()
   return formatBakuDay(lang, now)
+}
+
+// Shown while a page's code is loading — but only if that takes long enough
+// to notice, so a fast load doesn't flash a message.
+function PageLoading() {
+  const { t } = useTranslation()
+  const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    const id = setTimeout(() => setVisible(true), 250)
+    return () => clearTimeout(id)
+  }, [])
+  return (
+    <div role="status" className="flex-1 flex items-center justify-center py-24 text-[14px] font-bold text-textMuted">
+      {visible ? t('loading') : null}
+    </div>
+  )
 }
 
 export default function App() {
@@ -51,7 +74,7 @@ export default function App() {
 
   const userId = user?.id ?? 'guest'
 
-  const [state, setState] = usePersistedState(userId)
+  const [state, setState, sync] = usePersistedState(userId)
 
   const {
     tasks,
@@ -67,6 +90,7 @@ export default function App() {
     moveTask,
     completeTask,
     deleteTask,
+    clearDone,
     editTask,
     resetJar,
     resetStats,
@@ -79,6 +103,7 @@ export default function App() {
 
   const {
     activeSession,
+    pomodoroHistory,
     computeSecondsLeft,
     startSession,
     toggleRunning,
@@ -132,11 +157,32 @@ export default function App() {
     deleteGoal,
   } = usePlanStore(state, setState)
 
-  const { profile } = useProfile(userId)
+  // one profile for the whole app: the sidebar and the profile page share it
+  const account = useProfile(userId)
+  const { profile } = account
 
-  const handleRefresh = useCallback(() => {
+  const companion = useCompanionPrefs()
+
+  // The timer ends its sessions here, not in the timer card, so it keeps
+  // working on every page. If the tab is in the background and notifications
+  // were already allowed (for learning reminders), say so there too.
+  const notifyTimer = useCallback(
+    (finishedMode) => {
+      if (document.visibilityState !== 'hidden' || !canUseNotifications() || Notification.permission !== 'granted') return
+      try {
+        new Notification('inji', { body: t(finishedMode === 'focus' ? 'notifyFocusDone' : 'notifyBreakDone') })
+      } catch {
+        // some browsers only allow notifications from a service worker
+      }
+    },
+    [t],
+  )
+  usePomodoroTicker(activeSession, advanceToNextMode, notifyTimer)
+
+  const handleRefresh = useCallback(async () => {
+    await sync.flush() // don't reload over a save that hasn't gone out yet
     window.location.reload()
-  }, [])
+  }, [sync])
   const { pullY, refreshing } = usePullToRefresh(handleRefresh)
 
   const jarRef = useRef(null)
@@ -152,7 +198,29 @@ export default function App() {
     }
   }, [boards, activeBoardId])
 
+  // the profile page only exists for a signed-in user
+  useEffect(() => {
+    if (!user && page === 'profile') setPage('board')
+  }, [user, page])
+
   if (loading) return null
+
+  // Signing out also removes this account's cached copy from the device, so
+  // the next person at this browser can't read it. Anything not yet saved is
+  // sent first; if that fails, the user decides whether to leave anyway.
+  async function handleSignOut() {
+    await sync.flush()
+    if (sync.hasPending() && !window.confirm(t('signOutUnsynced'))) return
+    sync.clearLocal()
+    await signOut()
+    setPage('board')
+  }
+
+  async function handleAccountDeleted() {
+    sync.clearLocal()
+    await signOut()
+    setPage('board')
+  }
 
   function handlePomodoroCancel() {
     const session = activeSession
@@ -173,7 +241,7 @@ export default function App() {
   function handleComplete(task) {
     const cardEl = cardRefs.current[task.id]
     const jarEl = jarRef.current
-    const alreadyCounted = completedTasks.some((c) => c.id === task.id)
+    const alreadyCounted = task.counted || completedTasks.some((c) => c.id === task.id)
     if (!cardEl || !jarEl || alreadyCounted) {
       completeTask(task.id)
       return
@@ -229,17 +297,27 @@ export default function App() {
         onNavigate={setPage}
         user={user}
         onSignIn={() => setShowAuth(true)}
-        onSignOut={signOut}
         profileName={`${profile.first_name} ${profile.last_name}`.trim()}
         profileAvatar={profile.avatar_url}
+        sync={sync}
+        companionOn={companion.summoned}
+        onToggleCompanion={companion.toggle}
       />
 
       {/* on tablet/desktop the board fits the window; its panels scroll inside */}
       <main className={`flex-1 min-w-0 flex flex-col pb-tabbar md:pb-0 ${page === 'board' ? 'md:h-dvh md:overflow-hidden' : ''}`}>
-        {page === 'profile' ? (
-          <ProfilePage userId={userId} userEmail={user?.email} onSignOut={signOut} />
+        <Suspense fallback={<PageLoading />}>
+        {page === 'profile' && user ? (
+          <ProfilePage userEmail={user.email} account={account} onSignOut={handleSignOut} onAccountDeleted={handleAccountDeleted} />
         ) : page === 'stats' ? (
-          <StatsPage categoryCounts={categoryCounts} completedTasks={completedTasks} onResetStats={resetStats} boards={boards} tasks={tasks} />
+          <StatsPage
+            categoryCounts={categoryCounts}
+            completedTasks={completedTasks}
+            onResetStats={resetStats}
+            boards={boards}
+            tasks={tasks}
+            pomodoroHistory={pomodoroHistory}
+          />
         ) : page === 'habits' ? (
           <HabitsPage
             habits={habits}
@@ -341,9 +419,19 @@ export default function App() {
                   tasks={boardTasks.filter((t) => t.col === 'inprog')}
                   onStart={startSession}
                   onToggle={toggleRunning}
-                  onModeComplete={advanceToNextMode}
                   onReset={resetSession}
                   onCancel={handlePomodoroCancel}
+                  footer={
+                    <button
+                      type="button"
+                      onClick={companion.toggle}
+                      aria-pressed={companion.summoned}
+                      className="inline-flex items-center gap-1.5 rounded-lg px-1.5 py-1 text-[12px] font-extrabold text-textSecondary hover:text-textPrimary"
+                    >
+                      <PearlIcon size={16} />
+                      {companion.summoned ? t('companionDismiss') : t('companionCall')}
+                    </button>
+                  }
                 />
               </section>
 
@@ -357,12 +445,14 @@ export default function App() {
                   onDelete={deleteTask}
                   onEdit={editTask}
                   onDropTask={handleDropTask}
+                  onClearDone={() => clearDone(activeBoardId)}
                   cardRefs={cardRefs}
                 />
               </div>
             </div>
           </div>
         )}
+        </Suspense>
       </main>
 
       <AnimatePresence>
@@ -414,21 +504,45 @@ export default function App() {
         ))}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {passwordRecovery && user ? (
-          <ResetPasswordModal key="reset" />
-        ) : showAuth && (
-          <AuthModal
-            key="auth"
-            initialMode={linkError ? 'forgot' : 'login'}
-            initialError={authErrorMessage(linkError, t)}
-            onClose={() => {
-              setShowAuth(false)
-              clearLinkError()
-            }}
-          />
-        )}
-      </AnimatePresence>
+      <Suspense fallback={null}>
+        <AnimatePresence>
+          {companion.summoned && (
+            <Companion
+              key="companion"
+              initialPos={companion.pos}
+              onMove={companion.setPos}
+              onDismiss={companion.dismiss}
+              activeSession={activeSession}
+              beadCount={beadCount}
+              dailyGoal={dailyGoal}
+              onStartFocus={() => startSession()}
+              onToggleTimer={toggleRunning}
+            />
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {passwordRecovery && user ? (
+            <ResetPasswordModal key="reset" />
+          ) : showAuth ? (
+            <AuthModal
+              key="auth"
+              initialMode={linkError ? 'forgot' : 'login'}
+              initialError={authErrorMessage(linkError, t)}
+              onClose={() => {
+                setShowAuth(false)
+                clearLinkError()
+              }}
+            />
+          ) : null}
+        </AnimatePresence>
+      </Suspense>
+
+      <GuestImportPrompt
+        summary={user ? sync.guestImport : null}
+        onAccept={sync.acceptGuestImport}
+        onDismiss={sync.dismissGuestImport}
+      />
     </div>
   )
 }

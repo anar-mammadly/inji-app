@@ -110,7 +110,7 @@ export default function PlanDayCard({ day, onSetTitle, onAddTodo, onToggleTodo, 
                 setNewTime('')
                 setShowTimePicker(false)
               }}
-              className="flex h-9 w-9 items-center justify-center rounded-xl text-textMuted transition-colors hover:bg-pomSoft hover:text-coral"
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-textMuted transition-colors hover:bg-pomSoft hover:text-coralInk"
               aria-label={t('planClearTime')}
             >
               <X size={15} strokeWidth={2.6} />
@@ -123,7 +123,7 @@ export default function PlanDayCard({ day, onSetTitle, onAddTodo, onToggleTodo, 
             onClick={() => setShowTimePicker((v) => !v)}
             className={`flex h-9 w-9 items-center justify-center rounded-xl border-2 shrink-0 transition-colors ${
               showTimePicker || newTime
-                ? 'border-blue text-blueDark bg-blueSoft'
+                ? 'border-blue text-blueInk bg-blueSoft'
                 : 'border-border text-textMuted hover:border-borderStrong hover:text-textSecondary'
             }`}
             aria-label={t('planAddTime')}
@@ -140,7 +140,7 @@ export default function PlanDayCard({ day, onSetTitle, onAddTodo, onToggleTodo, 
           />
           <button
             type="submit"
-            className="press flex h-9 w-9 items-center justify-center rounded-xl bg-accent text-white shrink-0 shadow-[0_3px_0_#46A302] hover:bg-[#61D90A] transition-colors"
+            className="press flex h-9 w-9 items-center justify-center rounded-xl bg-accent text-onAccent shrink-0 shadow-[0_3px_0_#46A302] hover:bg-[#61D90A] transition-colors"
             aria-label={t('planAddTodo')}
           >
             <Plus size={18} strokeWidth={3} />
@@ -185,7 +185,7 @@ function PlanTodoRow({ todo, onToggle, onEdit, onSetTime, onDelete }) {
           <button
             onMouseDown={(e) => e.preventDefault()} // keep focus inside the row (Safari doesn't focus buttons)
             onClick={() => setTimeDraft('')}
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-textMuted transition-colors hover:bg-pomSoft hover:text-coral shrink-0"
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-textMuted transition-colors hover:bg-pomSoft hover:text-coralInk shrink-0"
             aria-label={t('planClearTime')}
           >
             <X size={15} strokeWidth={2.6} />
@@ -209,12 +209,12 @@ function PlanTodoRow({ todo, onToggle, onEdit, onSetTime, onDelete }) {
         aria-label="toggle"
         aria-pressed={!!todo.done}
       >
-        {todo.done && <Check size={14} strokeWidth={3.5} className="text-white" />}
+        {todo.done && <Check size={14} strokeWidth={3.5} className="text-onAccent" />}
       </button>
       {todo.time && (
         <span
           className={`shrink-0 h-6 px-2 inline-flex items-center rounded-full text-[12px] font-bold tabular-nums ${
-            todo.done ? 'bg-white text-textMuted' : 'bg-blueSoft text-blueDark'
+            todo.done ? 'bg-white text-textMuted' : 'bg-blueSoft text-blueInk'
           }`}
         >
           {todo.time}
@@ -234,7 +234,7 @@ function PlanTodoRow({ todo, onToggle, onEdit, onSetTime, onDelete }) {
       </div>
       <button
         onClick={onDelete}
-        className="flex h-8 w-8 items-center justify-center rounded-xl text-textMuted transition-colors hover:bg-pomSoft hover:text-coral shrink-0"
+        className="flex h-8 w-8 items-center justify-center rounded-xl text-textMuted transition-colors hover:bg-pomSoft hover:text-coralInk shrink-0"
         aria-label="delete"
       >
         <X size={15} strokeWidth={2.6} />

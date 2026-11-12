@@ -46,18 +46,18 @@ const TaskCard = forwardRef(function TaskCard({ task, onStart, onBack, onComplet
   return (
     <article
       ref={overlay ? forwardedRef : mergeRefs([forwardedRef, setNodeRef])}
-      className={`group rounded-2xl border-2 bg-white p-3 touch-none transition-colors ${stateClass}`}
+      className={`group rounded-2xl border-2 bg-white p-3 transition-colors ${stateClass}`}
     >
       <div className="flex items-start gap-2.5">
         <button
           onClick={() => !isDone && onComplete(task)}
           disabled={isDone}
           aria-label={t('doneAction')}
-          className={`mt-0.5 flex h-6 w-6 items-center justify-center rounded-full shrink-0 transition-all ${
+          className={`hit mt-0.5 flex h-6 w-6 items-center justify-center rounded-full shrink-0 transition-all ${
             isDone ? 'bg-accent border-2 border-accentDark' : 'border-[2.5px] border-borderStrong hover:border-accent hover:scale-110'
           }`}
         >
-          {isDone && <Check size={14} strokeWidth={3.5} className="text-white" />}
+          {isDone && <Check size={14} strokeWidth={3.5} className="text-onAccent" />}
         </button>
 
         <div className="flex-1 min-w-0">
@@ -77,7 +77,12 @@ const TaskCard = forwardRef(function TaskCard({ task, onStart, onBack, onComplet
               className="w-full text-[15px] font-bold outline-none bg-transparent border-b-2 border-blue"
             />
           ) : (
-            <div {...listeners} {...attributes} className="cursor-grab active:cursor-grabbing">
+            <div
+              {...listeners}
+              {...attributes}
+              aria-label={task.name}
+              className="drag-handle cursor-grab rounded-md active:cursor-grabbing"
+            >
               <p className={`text-[15px] leading-snug font-bold break-words ${isDone ? 'text-textMuted line-through' : 'text-textPrimary'}`}>
                 {task.name}
               </p>
@@ -91,7 +96,7 @@ const TaskCard = forwardRef(function TaskCard({ task, onStart, onBack, onComplet
             {task.col === 'todo' && (
               <button
                 onClick={() => onStart(task.id)}
-                className="press h-7 px-3 rounded-xl bg-blue text-white text-[12px] font-extrabold shadow-[0_3px_0_#0E8FCE]"
+                className="press h-7 px-3 rounded-xl bg-blue text-onBlue text-[12px] font-extrabold shadow-[0_3px_0_#0E8FCE]"
               >
                 {t('start')}
               </button>
@@ -100,7 +105,7 @@ const TaskCard = forwardRef(function TaskCard({ task, onStart, onBack, onComplet
               <>
                 <button
                   onClick={() => onComplete(task)}
-                  className="press h-7 px-3 rounded-xl bg-accent text-white text-[12px] font-extrabold shadow-[0_3px_0_#46A302]"
+                  className="press h-7 px-3 rounded-xl bg-accent text-onAccent text-[12px] font-extrabold shadow-[0_3px_0_#46A302]"
                 >
                   {t('doneAction')}
                 </button>
@@ -119,7 +124,7 @@ const TaskCard = forwardRef(function TaskCard({ task, onStart, onBack, onComplet
                 setEditValue(task.name)
                 setEditing(true)
               }}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-textMuted transition-colors hover:bg-surfaceAlt hover:text-textSecondary"
+              className="hit flex h-7 w-7 items-center justify-center rounded-lg text-textMuted transition-colors hover:bg-surfaceAlt hover:text-textSecondary"
               aria-label={t('edit')}
             >
               <Pencil size={13} strokeWidth={2.5} />
@@ -127,7 +132,7 @@ const TaskCard = forwardRef(function TaskCard({ task, onStart, onBack, onComplet
           )}
           <button
             onClick={() => onDelete(task.id)}
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-textMuted transition-colors hover:bg-pomSoft hover:text-coral"
+            className="hit flex h-7 w-7 items-center justify-center rounded-lg text-textMuted transition-colors hover:bg-pomSoft hover:text-coralInk"
             aria-label={t('delete')}
           >
             <X size={15} strokeWidth={2.5} />

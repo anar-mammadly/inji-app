@@ -52,7 +52,7 @@ export default function AuthModal({ onClose, initialMode = 'login', initialError
     setInfo('')
   }
 
-  const linkBtn = 'font-extrabold text-blueDark hover:underline'
+  const linkBtn = 'font-extrabold text-blueInk hover:underline'
 
   return (
     <Modal open onClose={onClose}>
@@ -96,8 +96,8 @@ export default function AuthModal({ onClose, initialMode = 'login', initialError
           </button>
         )}
 
-        {error && <p className="text-[13px] font-bold px-3 py-2 rounded-xl bg-pomSoft text-coralDark">{error}</p>}
-        {info && <p className="text-[13px] font-bold px-3 py-2 rounded-xl bg-accentSoft text-accentDark">{info}</p>}
+        {error && <p className="text-[13px] font-bold px-3 py-2 rounded-xl bg-pomSoft text-coralInk">{error}</p>}
+        {info && <p className="text-[13px] font-bold px-3 py-2 rounded-xl bg-accentSoft text-accentInk">{info}</p>}
 
         <Button type="submit" disabled={submitting} className="mt-1 w-full">
           {t(SUBMIT_KEY[mode])}

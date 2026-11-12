@@ -45,7 +45,7 @@ export default function NoteCard({ note, index, onEdit, onDelete }) {
           <button onClick={() => setEditing((e) => !e)} className={iconBtn} aria-label={t('editNote')}>
             <Pencil size={14} strokeWidth={2.5} />
           </button>
-          <button onClick={onDelete} className={`${iconBtn} hover:!text-coral`} aria-label={t('deleteNote')}>
+          <button onClick={onDelete} className={`${iconBtn} hover:!text-coralInk`} aria-label={t('deleteNote')}>
             <X size={16} strokeWidth={2.6} />
           </button>
         </div>

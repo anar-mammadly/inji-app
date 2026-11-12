@@ -59,7 +59,7 @@ export default function ResetPasswordModal() {
           className={inputClass}
         />
 
-        {error && <p className="text-[13px] font-bold px-3 py-2 rounded-xl bg-pomSoft text-coralDark">{error}</p>}
+        {error && <p className="text-[13px] font-bold px-3 py-2 rounded-xl bg-pomSoft text-coralInk">{error}</p>}
 
         <Button type="submit" disabled={submitting} className="mt-1 w-full">
           {t('authSavePassword')}

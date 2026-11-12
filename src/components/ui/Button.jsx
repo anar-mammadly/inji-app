@@ -1,10 +1,10 @@
 // Chunky 3D buttons: a solid bottom "ledge" that the button sinks onto when
 // pressed (see .press in index.css).
 const VARIANTS = {
-  primary: 'bg-accent text-white border-2 border-transparent shadow-[0_4px_0_#46A302] hover:bg-[#61D90A]',
+  primary: 'bg-accent text-onAccent border-2 border-transparent shadow-[0_4px_0_#46A302] hover:bg-[#61D90A]',
   secondary: 'bg-white text-textSecondary border-2 border-border shadow-[0_4px_0_#E5E7EB] hover:bg-surfaceAlt',
-  soft: 'bg-blueSoft text-blueDark border-2 border-transparent shadow-[0_4px_0_#B5E5FB] hover:bg-[#CDEEFF]',
-  danger: 'bg-coral text-white border-2 border-transparent shadow-[0_4px_0_#EA2B2B] hover:bg-[#FF5C5C]',
+  soft: 'bg-blueSoft text-blueInk border-2 border-transparent shadow-[0_4px_0_#B5E5FB] hover:bg-[#CDEEFF]',
+  danger: 'bg-danger text-white border-2 border-transparent shadow-[0_4px_0_#B91C1C] hover:bg-dangerDark',
   ghost: 'text-textMuted hover:text-textSecondary hover:bg-surfaceAlt',
 }
 

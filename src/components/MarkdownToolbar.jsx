@@ -39,7 +39,7 @@ export default function MarkdownToolbar({ textareaRef, value, setValue }) {
   }
 
   const btn =
-    'inline-flex items-center gap-1.5 h-8 px-2.5 rounded-xl border-2 border-border bg-white text-[12px] font-bold text-textSecondary transition-colors hover:border-blue hover:bg-blueSoft hover:text-blueDark'
+    'inline-flex items-center gap-1.5 h-8 px-2.5 rounded-xl border-2 border-border bg-white text-[12px] font-bold text-textSecondary transition-colors hover:border-blue hover:bg-blueSoft hover:text-blueInk'
 
   return (
     <div className="flex flex-wrap items-center gap-2 mb-2">

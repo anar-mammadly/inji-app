@@ -71,7 +71,7 @@ export default function NotesPage({ notes, onAddNote, onEditNote, onDeleteNote }
       {notes.length === 0 ? (
         <Card className="flex flex-col items-center text-center gap-3 py-10">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-yellowSoft">
-            <StickyNote size={28} strokeWidth={2.5} className="text-yellowDark" />
+            <StickyNote size={28} strokeWidth={2.5} className="text-yellowInk" />
           </div>
           <p className="text-[15px] font-bold text-textSecondary">{t('noNotes')}</p>
           {!adding && (

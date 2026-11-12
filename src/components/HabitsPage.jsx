@@ -116,7 +116,7 @@ export default function HabitsPage({
             {subOptions.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {subOptions.map((opt) => (
-                  <span key={opt} className={`${chipClass} h-8 pl-3 pr-1 max-w-full bg-accentSoft text-accentDark`}>
+                  <span key={opt} className={`${chipClass} h-8 pl-3 pr-1 max-w-full bg-accentSoft text-accentInk`}>
                     <span className="truncate">{opt}</span>
                     <button
                       type="button"

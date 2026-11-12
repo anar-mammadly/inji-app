@@ -15,6 +15,8 @@ import {
   PanelLeftOpen,
 } from 'lucide-react'
 import { useTranslation } from '../i18n/LanguageContext'
+import SyncStatus from './SyncStatus'
+import { PearlIcon } from '../companion/CompanionCharacter'
 
 // every section gets its own candy color, Duolingo-style
 const NAV = [
@@ -32,7 +34,7 @@ const MOBILE_MORE = NAV.slice(4)
 
 export function Logo({ compact = false }) {
   if (compact) {
-    return <span className="nacre inline-block h-8 w-8 rounded-full border-2 border-greenDark" aria-label="inji" />
+    return <span className="nacre inline-block h-8 w-8 rounded-full border-2 border-greenDark" role="img" aria-label="inji" />
   }
   return (
     <span className="text-[26px] font-extrabold tracking-tight leading-none lowercase select-none text-textPrimary">
@@ -47,7 +49,7 @@ function Avatar({ user, profileName, profileAvatar, size = 32 }) {
     : (user?.email?.[0] ?? '?').toUpperCase()
   return (
     <span
-      className="inline-flex items-center justify-center rounded-full bg-accent text-white text-[12px] font-extrabold overflow-hidden shrink-0 border-2 border-greenDark"
+      className="inline-flex items-center justify-center rounded-full bg-accent text-onAccent text-[12px] font-extrabold overflow-hidden shrink-0 border-2 border-greenDark"
       style={{ width: size, height: size }}
     >
       {profileAvatar ? (
@@ -68,7 +70,7 @@ function LangToggle({ className = '' }) {
           key={code}
           onClick={() => setLang(code)}
           aria-pressed={lang === code}
-          className={`px-3 h-8 transition-colors ${lang === code ? 'bg-blue text-white' : 'bg-white text-textMuted hover:text-textSecondary'}`}
+          className={`px-3 h-8 transition-colors ${lang === code ? 'bg-blue text-onBlue' : 'bg-white text-textMuted hover:text-textSecondary'}`}
         >
           {code.toUpperCase()}
         </button>
@@ -82,7 +84,7 @@ function Streak({ streakDays, compact = false }) {
   const lit = streakDays > 0
   return (
     <span
-      className={`inline-flex items-center gap-1 text-[14px] font-extrabold whitespace-nowrap ${lit ? 'text-orange' : 'text-textMuted'}`}
+      className={`inline-flex items-center gap-1 text-[14px] font-extrabold whitespace-nowrap ${lit ? 'text-orangeInk' : 'text-textMuted'}`}
       title={t('streak', { n: streakDays })}
     >
       <Flame size={20} strokeWidth={2.4} fill={lit ? '#FF9600' : '#E5E7EB'} className={lit ? 'text-orange' : 'text-borderStrong'} />
@@ -105,7 +107,18 @@ function readSidebarOpen() {
   }
 }
 
-export default function Navbar({ streakDays, page, onNavigate, user, onSignIn, profileName, profileAvatar }) {
+export default function Navbar({
+  streakDays,
+  page,
+  onNavigate,
+  user,
+  onSignIn,
+  profileName,
+  profileAvatar,
+  sync,
+  companionOn,
+  onToggleCompanion,
+}) {
   const { t } = useTranslation()
   const [moreOpen, setMoreOpen] = useState(false)
   // desktop sidebar: open = icons + labels, closed = icons only (tablets are always icons only)
@@ -128,7 +141,7 @@ export default function Navbar({ streakDays, page, onNavigate, user, onSignIn, p
   }
 
   const accountLabel = profileName?.trim() || user?.email
-  const activeItem = 'bg-blueSoft border-[#84D8FF] text-blueDark'
+  const activeItem = 'bg-blueSoft border-[#84D8FF] text-blueInk'
   const idleItem = 'border-transparent text-textSecondary hover:bg-surfaceAlt'
   // classes that only apply when the desktop sidebar is open
   const wide = (cls) => (open ? cls : '')
@@ -198,6 +211,23 @@ export default function Navbar({ streakDays, page, onNavigate, user, onSignIn, p
             <span className={wide('lg:hidden')}><Streak streakDays={streakDays} compact /></span>
             <span className={`hidden ${wide('lg:inline')}`}><Streak streakDays={streakDays} /></span>
           </div>
+          <button
+            onClick={onToggleCompanion}
+            aria-pressed={companionOn}
+            title={companionOn ? t('companionDismiss') : t('companionCall')}
+            className={`flex items-center gap-2.5 h-10 rounded-2xl border-2 px-0 justify-center ${wide('lg:px-3 lg:justify-start')} text-[13px] font-extrabold transition-colors ${
+              companionOn ? 'border-[#F9B8DE] bg-[#FFF0F8] text-textPrimary' : 'border-transparent text-textSecondary hover:bg-surfaceAlt'
+            }`}
+          >
+            <PearlIcon size={22} />
+            <span className={`hidden whitespace-nowrap ${wide('lg:inline')}`}>
+              {companionOn ? t('companionDismiss') : t('companionCall')}
+            </span>
+          </button>
+          <div className={`flex justify-center ${wide('lg:justify-start lg:px-3')}`}>
+            <span className={wide('lg:hidden')}><SyncStatus sync={sync} compact /></span>
+            <span className={`hidden min-w-0 ${wide('lg:inline-flex')}`}><SyncStatus sync={sync} /></span>
+          </div>
           <LangToggle className={`self-center ${wide('lg:self-start lg:ml-3')}`} />
           {user ? (
             <button
@@ -213,7 +243,7 @@ export default function Navbar({ streakDays, page, onNavigate, user, onSignIn, p
           ) : (
             <button
               onClick={onSignIn}
-              className="press flex items-center justify-center gap-2 h-11 rounded-2xl bg-accent text-white text-[14px] font-extrabold shadow-[0_4px_0_#46A302] hover:bg-[#61D90A]"
+              className="press flex items-center justify-center gap-2 h-11 rounded-2xl bg-accent text-onAccent text-[14px] font-extrabold shadow-[0_4px_0_#46A302] hover:bg-[#61D90A]"
               title={t('authLoginButton')}
             >
               <LogIn size={18} strokeWidth={2.5} />
@@ -227,6 +257,7 @@ export default function Navbar({ streakDays, page, onNavigate, user, onSignIn, p
       <header className="md:hidden sticky top-0 z-30 flex items-center justify-between gap-3 h-14 px-4 bg-surface border-b-2 border-border pt-[env(safe-area-inset-top)] box-content">
         <Logo />
         <div className="flex items-center gap-3">
+          {user && <SyncStatus sync={sync} compact />}
           <Streak streakDays={streakDays} compact />
           {user ? (
             <button onClick={() => go('profile')} aria-label={accountLabel}>
@@ -235,7 +266,7 @@ export default function Navbar({ streakDays, page, onNavigate, user, onSignIn, p
           ) : (
             <button
               onClick={onSignIn}
-              className="press h-9 px-3.5 rounded-xl bg-accent text-white text-[13px] font-extrabold shadow-[0_3px_0_#46A302]"
+              className="press h-9 px-3.5 rounded-xl bg-accent text-onAccent text-[13px] font-extrabold shadow-[0_3px_0_#46A302]"
             >
               {t('authLoginButton')}
             </button>
@@ -323,6 +354,19 @@ export default function Navbar({ streakDays, page, onNavigate, user, onSignIn, p
                   </button>
                 )}
               </div>
+              <button
+                onClick={() => {
+                  onToggleCompanion()
+                  setMoreOpen(false)
+                }}
+                aria-pressed={companionOn}
+                className={`mt-2 flex w-full items-center gap-3 h-14 px-4 rounded-2xl border-2 text-[15px] font-extrabold ${
+                  companionOn ? 'border-[#F9B8DE] bg-[#FFF0F8] text-textPrimary' : 'border-border text-textSecondary'
+                }`}
+              >
+                <PearlIcon size={22} />
+                {companionOn ? t('companionDismiss') : t('companionCall')}
+              </button>
               <div className="mt-4 pt-4 border-t-2 border-border flex items-center justify-between px-1">
                 <span className="text-[14px] font-extrabold text-textSecondary">{t('language')}</span>
                 <LangToggle />

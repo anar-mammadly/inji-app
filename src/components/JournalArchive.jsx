@@ -58,7 +58,7 @@ function ArchiveItem({ entry, onEdit, onDelete }) {
           </button>
           <button
             onClick={onDelete}
-            className={`${iconButtonClass} hover:!bg-pomSoft hover:!text-coral`}
+            className={`${iconButtonClass} hover:!bg-pomSoft hover:!text-coralInk`}
             aria-label={t('deleteEntry')}
           >
             <X size={16} strokeWidth={2.6} />
@@ -93,7 +93,7 @@ export default function JournalArchive({ entries, onEdit, onDelete }) {
       {dates.map((date) => (
         <Card key={date}>
           <div className="mb-3">
-            <span className={`${chipClass} h-7 px-3 text-[13px] bg-purpleSoft text-purpleDark`}>
+            <span className={`${chipClass} h-7 px-3 text-[13px] bg-purpleSoft text-purpleInk`}>
               <CalendarDays size={14} strokeWidth={2.5} />
               {format(parseISO(date), 'd MMMM yyyy')}
             </span>

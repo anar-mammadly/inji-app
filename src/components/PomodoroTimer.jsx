@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { colors } from '../utils/colors'
 import { useTranslation } from '../i18n/LanguageContext'
-import { playTimerEndSound } from '../utils/sound'
 import { FOCUS_SECONDS, BREAK_SECONDS } from '../hooks/usePomodoroStore'
 import Button from './ui/Button'
 
@@ -16,8 +15,8 @@ export default function PomodoroTimer({
   onStart,
   onToggle,
   onReset,
-  onModeComplete,
   onCancel,
+  footer = null,
 }) {
   const { t } = useTranslation()
   const [, forceTick] = useState(0)
@@ -35,13 +34,6 @@ export default function PomodoroTimer({
     const id = setInterval(() => forceTick((n) => n + 1), 250)
     return () => clearInterval(id)
   }, [running])
-
-  useEffect(() => {
-    if (!activeSession || !running) return
-    if (secondsLeft > 0) return
-    playTimerEndSound()
-    onModeComplete()
-  }, [secondsLeft, running, activeSession, onModeComplete])
 
   function handlePrimaryAction() {
     if (!activeSession) {
@@ -88,7 +80,7 @@ export default function PomodoroTimer({
           </span>
           <span
             className="px-2.5 py-0.5 rounded-full text-[12px] font-extrabold"
-            style={{ color, background: mode === 'focus' ? '#DFFAB8' : '#FFF4C2' }}
+            style={mode === 'focus' ? { color: '#2A6E00', background: '#DFFAB8' } : { color: '#7A5A00', background: '#FFF4C2' }}
           >
             {mode === 'focus' ? t('pomodoroFocus') : t('pomodoroBreak')}
           </span>
@@ -122,7 +114,7 @@ export default function PomodoroTimer({
           {running ? t('pomodoroPause') : activeSession ? t('pomodoroResume') : t('pomodoroStart')}
         </Button>
         {hasFocusProgress ? (
-          <Button onClick={onCancel} variant="secondary" className="w-full !px-2 !text-coral" title={t('pomodoroCancelHint')}>
+          <Button onClick={onCancel} variant="secondary" className="w-full !px-2 !text-coralInk" title={t('pomodoroCancelHint')}>
             {t('pomodoroCancel')}
           </Button>
         ) : (
@@ -132,6 +124,7 @@ export default function PomodoroTimer({
         )}
       </div>
       {hasFocusProgress && <p className="-mt-1 text-center text-[12px] font-semibold text-textMuted">{t('pomodoroCancelHint')}</p>}
+      {footer}
     </div>
   )
 }

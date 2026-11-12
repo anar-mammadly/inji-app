@@ -1,6 +1,6 @@
 import { generateId } from '../utils/id'
-
-const DEFAULT_CATEGORY_COUNTS = { study: 0, work: 0, personal: 0 }
+import { COMPLETED_TASKS_LIMIT, DEFAULT_CATEGORY_COUNTS } from '../lib/appState'
+import { weeklyBeadCount } from './useStreak'
 
 export function useTaskStore(state, setState) {
   function addTask(name, category, boardId, col = 'todo') {
@@ -27,38 +27,38 @@ export function useTaskStore(state, setState) {
     setState((s) => {
       const task = s.tasks.find((t) => t.id === id)
       if (!task || task.col === 'done') return s
-      // a task dragged back out of Done and completed again still moves to
-      // Done, but must not be counted (bead, stats, history) a second time
-      if (s.completedTasks.some((c) => c.id === id)) {
+      const completedAt = new Date().toISOString()
+      // A task dragged back out of Done and completed again still moves to
+      // Done, but must not be counted (bead, stats, history) a second time.
+      // The flag lives on the task itself, so it survives a statistics reset
+      // and the trimming of the completed list.
+      if (task.counted || s.completedTasks.some((c) => c.id === id)) {
         return {
           ...s,
-          tasks: s.tasks.map((t) => (t.id === id ? { ...t, col: 'done', completedAt: new Date().toISOString() } : t)),
+          tasks: s.tasks.map((t) => (t.id === id ? { ...t, col: 'done', completedAt, counted: true } : t)),
         }
       }
       return {
         ...s,
-        tasks: s.tasks.map((t) =>
-          t.id === id ? { ...t, col: 'done', completedAt: new Date().toISOString() } : t,
-        ),
+        tasks: s.tasks.map((t) => (t.id === id ? { ...t, col: 'done', completedAt, counted: true } : t)),
         beadCount: s.beadCount + 1,
-        categoryCounts: task
-          ? { ...s.categoryCounts, [task.category]: (s.categoryCounts[task.category] || 0) + 1 }
-          : s.categoryCounts,
-        todayBeadCategories: task
-          ? [...s.todayBeadCategories, task.category]
-          : s.todayBeadCategories,
-        completedTasks: task
-          ? [
-              ...s.completedTasks,
-              { id: task.id, name: task.name, category: task.category, boardId: task.boardId, completedAt: new Date().toISOString() },
-            ]
-          : s.completedTasks,
+        categoryCounts: { ...s.categoryCounts, [task.category]: (s.categoryCounts[task.category] || 0) + 1 },
+        todayBeadCategories: [...s.todayBeadCategories, task.category],
+        completedTasks: [
+          ...s.completedTasks,
+          { id: task.id, name: task.name, category: task.category, boardId: task.boardId, completedAt },
+        ].slice(-COMPLETED_TASKS_LIMIT),
       }
     })
   }
 
   function deleteTask(id) {
     setState((s) => ({ ...s, tasks: s.tasks.filter((t) => t.id !== id) }))
+  }
+
+  // Clear a board's Done column. The pearls and statistics those tasks earned stay.
+  function clearDone(boardId) {
+    setState((s) => ({ ...s, tasks: s.tasks.filter((t) => !(t.boardId === boardId && t.col === 'done')) }))
   }
 
   function editTask(id, name) {
@@ -75,7 +75,7 @@ export function useTaskStore(state, setState) {
   }
 
   function resetStats() {
-    setState((s) => ({ ...s, categoryCounts: DEFAULT_CATEGORY_COUNTS, completedTasks: [] }))
+    setState((s) => ({ ...s, categoryCounts: { ...DEFAULT_CATEGORY_COUNTS }, completedTasks: [] }))
   }
 
   function setDailyGoal(goal) {
@@ -111,7 +111,7 @@ export function useTaskStore(state, setState) {
     })
   }
 
-  const weeklyCount = state.beadCount + state.history.reduce((sum, h) => sum + h.count, 0)
+  const weeklyCount = weeklyBeadCount(state)
 
   return {
     tasks: state.tasks,
@@ -128,6 +128,7 @@ export function useTaskStore(state, setState) {
     moveTask,
     completeTask,
     deleteTask,
+    clearDone,
     editTask,
     resetJar,
     resetStats,
