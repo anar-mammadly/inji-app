@@ -17,6 +17,8 @@ import { useTaskStore } from './hooks/useTaskStore'
 import { usePomodoroStore } from './hooks/usePomodoroStore'
 import { plannedSeconds, remainingSeconds } from './lib/focusRun'
 import { usePomodoroTicker } from './hooks/usePomodoroTicker'
+import { useAwayDetection } from './hooks/useAwayDetection'
+import { useTimerChrome } from './hooks/useTimerChrome'
 import { useHabitStore } from './hooks/useHabitStore'
 import { useLearningStore } from './hooks/useLearningStore'
 import { useCalendarStore } from './hooks/useCalendarStore'
@@ -44,6 +46,7 @@ const ProfilePage = lazy(() => import('./components/ProfilePage'))
 const AuthModal = lazy(() => import('./components/AuthModal'))
 const ResetPasswordModal = lazy(() => import('./components/ResetPasswordModal'))
 const Companion = lazy(() => import('./companion/Companion'))
+const CompanionIntro = lazy(() => import('./companion/CompanionIntro'))
 
 // isolated so the clock's per-second tick doesn't re-render the whole app
 function BakuToday() {
@@ -176,7 +179,10 @@ export default function App() {
     },
     [t],
   )
-  usePomodoroTicker(state, timer, onTimerEvent)
+  const tickerPulse = usePomodoroTicker(state, timer, onTimerEvent)
+  const pulseTicker = useCallback(() => tickerPulse.current(), [tickerPulse])
+  useAwayDetection(timer.settings.autoAway, timer)
+  useTimerChrome(activeSession)
 
   const handleRefresh = useCallback(async () => {
     await sync.flush() // don't reload over a save that hasn't gone out yet
@@ -510,8 +516,11 @@ export default function App() {
             <Companion
               key="companion"
               initialPos={companion.pos}
+              initialSize={companion.size}
               onMove={companion.setPos}
+              onResize={companion.setSize}
               onDismiss={companion.dismiss}
+              onPulse={pulseTicker}
               timer={timer}
               timerEvent={timerEvent}
               beadCount={beadCount}
@@ -538,6 +547,10 @@ export default function App() {
       </Suspense>
 
       <RunSummary run={freshRun} onClose={timer.dismissSummary} />
+
+      <Suspense fallback={null}>
+        {companion.summoned && !companion.introSeen && <CompanionIntro open onClose={companion.markIntroSeen} />}
+      </Suspense>
 
       <GuestImportPrompt
         summary={user ? sync.guestImport : null}

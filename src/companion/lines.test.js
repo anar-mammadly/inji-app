@@ -24,5 +24,8 @@ describe('companion lines', () => {
     expect(greetingEvent(8)).toBe('helloMorning')
     expect(greetingEvent(14)).toBe('hello')
     expect(greetingEvent(21)).toBe('helloEvening')
+    expect(greetingEvent(9, 1)).toBe('helloMonday')
+    expect(greetingEvent(16, 5)).toBe('helloFriday')
+    expect(greetingEvent(9, 5)).toBe('helloMorning')
   })
 })

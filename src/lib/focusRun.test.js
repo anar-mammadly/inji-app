@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   backToFocus,
+  dayStats,
+  stepAway,
   changeSetting,
   emptyRun,
   finishIfComplete,
@@ -41,14 +43,14 @@ describe('focus block', () => {
   it('wears the companion down in stages the longer the overtime', () => {
     expect(wearStage(0)).toBeNull()
     expect(wearStage(1)).toBe('waiting')
-    expect(wearStage(5)).toBe('dull')
+    expect(wearStage(5)).toBe('dry')
     expect(wearStage(30)).toBe('closing')
     expect(wearStage(75)).toBe('shut')
-    expect(wearLevel(0)).toEqual({ dull: 0, lid: 0 })
-    expect(wearLevel(13).dull).toBeCloseTo(0.5)
+    expect(wearLevel(0)).toEqual({ dry: 0, lid: 0 })
+    expect(wearLevel(13).dry).toBeCloseTo(0.5)
     expect(wearLevel(13).lid).toBe(0)
     expect(wearLevel(40).lid).toBeGreaterThan(0.4)
-    expect(wearLevel(90)).toEqual({ dull: 1, lid: 1 })
+    expect(wearLevel(90)).toEqual({ dry: 1, lid: 1 })
   })
 
   it('snooze adds five minutes, once, and only after time is up', () => {
@@ -145,6 +147,30 @@ describe('breaks and the run', () => {
   })
 })
 
+describe('walking away from the computer', () => {
+  it('starts the break from the moment the user left, not when it was noticed', () => {
+    const s = stepAway(begin(), { since: min(20), today: TODAY, id: id() })
+    expect(s.activeSession).toMatchObject({ mode: 'break', auto: true, earned: true })
+    expect(s.pomodoroHistory.at(-1).minutes).toBe(20)
+    // noticed three minutes later: those three minutes already count as break
+    expect(movedMinutes(s.activeSession, min(23))).toBe(3)
+  })
+
+  it('does nothing outside a running focus block', () => {
+    const paused = togglePause(begin(), { now: min(5) })
+    expect(stepAway(paused, { since: min(6), today: TODAY, id: id() })).toBe(paused)
+  })
+})
+
+describe('today', () => {
+  it('adds up blocks, focus and movement for the day, and starts again the next day', () => {
+    let s = standUp(begin(), { now: min(25), today: TODAY, id: id() })
+    s = backToFocus(s, { now: min(29), today: TODAY, id: id() })
+    expect(dayStats(s, TODAY)).toMatchObject({ blocks: 1, focusMin: 25, moveMin: 4 })
+    expect(dayStats(s, '2026-11-13')).toMatchObject({ blocks: 0, focusMin: 0, moveMin: 0 })
+  })
+})
+
 describe('settings', () => {
   it('steps within limits and keeps progress inside a shortened run', () => {
     let s = { focusSettings: {}, focusRun: { ...emptyRun(), progress: 3.5 } }
@@ -154,6 +180,7 @@ describe('settings', () => {
     for (let i = 0; i < 30; i++) s = changeSetting(s, 'focusMin', 1)
     expect(s.focusSettings.focusMin).toBe(90)
     expect(changeSetting(s, 'autoContinue').focusSettings.autoContinue).toBe(true)
+    expect(changeSetting(s, 'sound').focusSettings.sound).toBe(false)
   })
 
   it('estimates the length of a run', () => {

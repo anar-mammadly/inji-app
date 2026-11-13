@@ -3,11 +3,12 @@
 // This file is only the drawing. Behaviour (dragging, speech, the timer) lives
 // in Companion.jsx, so the character can be redrawn or replaced by editing
 // this one component. It must accept:
-//   mood      'idle' | 'focus' | 'waiting' | 'dull' | 'closing' | 'shut' |
+//   mood      'idle' | 'focus' | 'waiting' | 'dry' | 'closing' | 'shut' |
 //             'break' | 'stretch' | 'sleepy' | 'cheer' | 'dizzy' | 'held'
 //   progress  0–1 for the ring around the pearl, or null for no ring
 //   ringColor colour of that ring
-//   dull      0–1: how much shine it has lost (dust gathers as it rises)
+//   dry       0–1: how far it has dried out. The water in the shell sinks and
+//             disappears, the shell pales and cracks, the pearl turns matte.
 //   lid       0–1: how far the shell has closed over the pearl
 import { useId } from 'react'
 
@@ -60,24 +61,23 @@ function Mouth({ mood }) {
     return <path d="M42 51.5q6 8 12 0z" fill="#C2415B" stroke={INK} strokeWidth="1.8" strokeLinejoin="round" />
   }
   if (mood === 'sleepy' || mood === 'waiting') return <path d="M45 53.5h6" fill="none" stroke={INK} strokeWidth="2.2" strokeLinecap="round" />
-  if (mood === 'dull' || mood === 'closing' || mood === 'shut') {
+  if (mood === 'dry' || mood === 'closing' || mood === 'shut') {
     return <path d="M43 55q5-4 10 0" fill="none" stroke={INK} strokeWidth="2.2" strokeLinecap="round" />
   }
   return <path d="M43 51.5q5 4.2 10 0" fill="none" stroke={INK} strokeWidth="2.2" strokeLinecap="round" />
 }
 
-// specks of dust that settle on a pearl left sitting too long
-const DUST = [
-  [31, 33, 1.5], [44, 24, 1.2], [58, 27, 1.6], [66, 38, 1.3], [26, 46, 1.2],
-  [52, 34, 1.1], [38, 62, 1.4], [61, 60, 1.5], [48, 66, 1.2], [69, 50, 1.1],
-]
-
-export default function CompanionCharacter({ mood = 'idle', progress = null, ringColor = '#58CC02', size = 76, dull = 0, lid = 0 }) {
-  const id = useId()
+export default function CompanionCharacter({ mood = 'idle', progress = null, ringColor = '#58CC02', size = 76, dry = 0, lid = 0 }) {
+  // React's ids contain colons; without them the drawing can also be saved as
+  // a standalone SVG (the session summary does that for its share image)
+  const id = useId().replace(/:/g, '')
   const nacre = `nacre-${id}`
   const shell = `shell-${id}`
-  const dullness = Math.min(1, Math.max(0, dull))
+  const dryness = Math.min(1, Math.max(0, dry))
+  const wet = 1 - dryness
   const closed = Math.min(1, Math.max(0, lid))
+  const water = `water-${id}`
+  const SLOW = '1s linear'
 
   return (
     <svg
@@ -99,22 +99,33 @@ export default function CompanionCharacter({ mood = 'idle', progress = null, rin
           <stop offset="0%" stopColor="#FFA9DD" />
           <stop offset="100%" stopColor="#F26DB8" />
         </linearGradient>
+        <linearGradient id={water} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#9BDCFB" stopOpacity="0.9" />
+          <stop offset="100%" stopColor="#4FB7EE" stopOpacity="0.9" />
+        </linearGradient>
       </defs>
 
       <ellipse cx="48" cy="88" rx="24" ry="3.6" fill="#000" opacity="0.1" />
 
-      {/* the open shell it sits in */}
-      <path
-        d="M16 66c2 13 14 21 32 21s30-8 32-21c-4 2.4-7 2.6-10.5.4-3.4 2.4-7.4 2.4-10.8 0-3.4 2.4-7.4 2.4-10.7 0-3.3 2.4-7.3 2.4-10.7 0-3.5 2.2-7 2-10.5-.4-3.6 2.2-7.3 2.4-10.8 0z"
-        fill={`url(#${shell})`}
-        stroke="#D94C9F"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
-      <g stroke="#D94C9F" strokeWidth="1.6" strokeLinecap="round" opacity="0.55">
-        <path d="M48 72v11" />
-        <path d="M36 71l4 11" />
-        <path d="M60 71l-4 11" />
+      {/* the open shell it sits in — it pales and cracks as the water goes */}
+      <g style={{ filter: dryness > 0 ? `saturate(${1 - 0.72 * dryness}) brightness(${1 + 0.1 * dryness})` : undefined, transition: `filter ${SLOW}` }}>
+        <path
+          d="M16 66c2 13 14 21 32 21s30-8 32-21c-4 2.4-7 2.6-10.5.4-3.4 2.4-7.4 2.4-10.8 0-3.4 2.4-7.4 2.4-10.7 0-3.3 2.4-7.3 2.4-10.7 0-3.5 2.2-7 2-10.5.4-3.6 2.2-7.3 2.4-10.8 0z"
+          fill={`url(#${shell})`}
+          stroke="#D94C9F"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+        <g stroke="#D94C9F" strokeWidth="1.6" strokeLinecap="round" opacity="0.55">
+          <path d="M48 72v11" />
+          <path d="M36 71l4 11" />
+          <path d="M60 71l-4 11" />
+        </g>
+      </g>
+      <g fill="none" stroke="#7A3A5E" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" opacity={Math.max(0, dryness - 0.35) * 1.3} style={{ transition: `opacity ${SLOW}` }}>
+        <path d="M27 72l3 4-2 3 3 3" />
+        <path d="M68 71l-2 4 3 2-2 4" />
+        <path d="M44 80l2 2-1 3" />
       </g>
 
       {/* progress of the current session, drawn as a ring of fresh nacre */}
@@ -136,19 +147,32 @@ export default function CompanionCharacter({ mood = 'idle', progress = null, rin
         </g>
       )}
 
-      {/* the pearl — its colour drains and its highlights fade as it dulls */}
-      <g style={{ filter: dullness > 0 ? `saturate(${1 - 0.8 * dullness}) brightness(${1 - 0.13 * dullness})` : undefined, transition: 'filter 1s linear' }}>
+      {/* the pearl — wet it shines; drying, it turns grey and matte */}
+      <g style={{ filter: dryness > 0 ? `saturate(${1 - 0.85 * dryness}) brightness(${1 - 0.14 * dryness})` : undefined, transition: `filter ${SLOW}` }}>
         <circle cx="48" cy="45" r="26" fill={`url(#${nacre})`} stroke="#B4BFD6" strokeWidth="2" />
-        <ellipse cx="38" cy="30" rx="8" ry="4.6" fill="#fff" opacity={0.9 - 0.6 * dullness} transform="rotate(-28 38 30)" />
-        <circle cx="29.5" cy="38.5" r="1.8" fill="#fff" opacity={0.85 - 0.6 * dullness} />
+        <ellipse cx="38" cy="30" rx="8" ry="4.6" fill="#fff" opacity={0.9 * wet} transform="rotate(-28 38 30)" style={{ transition: `opacity ${SLOW}` }} />
+        <circle cx="29.5" cy="38.5" r="1.8" fill="#fff" opacity={0.85 * wet} style={{ transition: `opacity ${SLOW}` }} />
       </g>
-      {dullness > 0 && (
-        <g fill="#7C828D" opacity={0.75 * dullness} style={{ transition: 'opacity 1s linear' }}>
-          {DUST.map(([cx, cy, r], i) => (
-            <circle key={i} cx={cx} cy={cy} r={r} />
-          ))}
-        </g>
-      )}
+      <g fill="none" stroke="#6F7480" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" opacity={Math.max(0, dryness - 0.55) * 1.6} style={{ transition: `opacity ${SLOW}` }}>
+        <path d="M60 24l-3 5 3 3-2 4" />
+        <path d="M30 56l4 3-1 4" />
+        <path d="M66 52l-3 2 1 4" />
+      </g>
+
+      {/* the water it rests in: sinks and thins out as it dries, with it go the drops */}
+      <g style={{ transform: `translateY(${dryness * 7}px)`, opacity: Math.max(0, wet - 0.08), transition: `transform ${SLOW}, opacity ${SLOW}` }}>
+        <path
+          d="M19 67c5-3 9-3 14 0s9 3 14 0 9-3 14 0 9 3 14 0c1 1 2 1 2 1-2 10-13 16-30 16S20 78 18 68z"
+          fill={`url(#${water})`}
+        />
+        <path d="M24 68c4-2 7-2 10 0" fill="none" stroke="#fff" strokeWidth="1.4" strokeLinecap="round" opacity="0.8" />
+        <circle cx="66" cy="73" r="1.5" fill="#fff" opacity="0.7" />
+        <circle cx="60" cy="77" r="1" fill="#fff" opacity="0.6" />
+      </g>
+      <g fill="#7CCBF5" stroke="#3FA7E0" strokeWidth="0.8" opacity={Math.max(0, 1 - dryness * 2.2)} style={{ transition: `opacity ${SLOW}` }}>
+        <path d="M70 31c1.6 2.2 2.4 3.6 2.4 4.8a2.4 2.4 0 1 1-4.8 0c0-1.2.8-2.6 2.4-4.8z" />
+        <path d="M25 52c1.2 1.7 1.8 2.8 1.8 3.7a1.8 1.8 0 1 1-3.6 0c0-.9.6-2 1.8-3.7z" />
+      </g>
 
       <ellipse cx="32" cy="50.5" rx="4" ry="2.4" fill="#FF8FB7" opacity="0.5" />
       <ellipse cx="64" cy="50.5" rx="4" ry="2.4" fill="#FF8FB7" opacity="0.5" />
@@ -161,6 +185,8 @@ export default function CompanionCharacter({ mood = 'idle', progress = null, rin
           transform: `scaleY(${closed})`,
           transformOrigin: '48px 9px',
           opacity: closed > 0.02 ? 1 : 0,
+          // dried out like the rest of the shell
+          filter: dryness > 0 ? `saturate(${1 - 0.72 * dryness}) brightness(${1 + 0.1 * dryness})` : undefined,
           transition: 'transform 0.9s cubic-bezier(0.3, 1.3, 0.5, 1), opacity 0.2s linear',
         }}
       >
@@ -197,7 +223,7 @@ export default function CompanionCharacter({ mood = 'idle', progress = null, rin
 
 // The pearl alone, for buttons that call or dismiss the companion.
 export function PearlIcon({ size = 20 }) {
-  const id = useId()
+  const id = useId().replace(/:/g, '')
   return (
     <svg viewBox="0 0 20 20" width={size} height={size} aria-hidden="true" focusable="false" className="shrink-0">
       <defs>

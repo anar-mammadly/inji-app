@@ -14,7 +14,20 @@
 //   • When every segment is full the run is finished and summarised.
 import { addDaysISO } from '../utils/day'
 
-export const FOCUS_DEFAULTS = { blocks: 4, focusMin: 25, breakMin: 5, longBreakMin: 15, longEvery: 4, autoContinue: false }
+export const FOCUS_DEFAULTS = {
+  blocks: 4,
+  focusMin: 25,
+  breakMin: 5,
+  longBreakMin: 15,
+  longEvery: 4,
+  autoContinue: false,
+  sound: true,
+  // start the break by itself when the computer has been left alone
+  autoAway: false,
+}
+
+// how long the computer must sit untouched before that counts as having left
+export const AWAY_MINUTES = 3
 
 // [min, max, step] for each adjustable setting
 export const FOCUS_LIMITS = {
@@ -37,7 +50,7 @@ export const NUDGE_MINUTES = [-1, 0, 4, 8, 12, 16, 20, 30, 40, 60, 90]
 // never speak at the same moment.
 export const WEAR = [
   { from: 0, stage: 'waiting' }, // time is up, still patient
-  { from: 3, stage: 'dull' }, // losing its shine, gathering dust
+  { from: 3, stage: 'dry' }, // the water in the shell is going, the shine with it
   { from: 25, stage: 'closing' }, // the shell starts to close
   { from: 50, stage: 'shut' }, // closed until you stand up
 ]
@@ -47,6 +60,12 @@ const EPS = 1e-6
 
 export function emptyRun() {
   return { progress: 0, blocks: 0, focusMin: 0, moveMin: 0 }
+}
+
+// what was done today, for the settings panel
+export function dayStats(state, today) {
+  const day = state.focusDay
+  return day && day.date === today ? day : { date: today, blocks: 0, focusMin: 0, moveMin: 0 }
 }
 
 export function emptyTotals() {
@@ -89,13 +108,13 @@ export function wearStage(overMin) {
   return overMin > 0 ? stage : null
 }
 
-// How worn the companion should look: `dull` 0–1 (shine lost, dust), `lid`
-// 0–1 (how far the shell has closed over the pearl).
+// How worn the companion should look: `dry` 0–1 (water gone from the shell,
+// shine gone from the pearl), `lid` 0–1 (how far the shell has closed).
 export function wearLevel(overMin) {
-  if (overMin <= 0) return { dull: 0, lid: 0 }
-  const dull = clamp((overMin - 1) / 24, 0, 1)
+  if (overMin <= 0) return { dry: 0, lid: 0 }
+  const dry = clamp((overMin - 1) / 24, 0, 1)
   const lid = overMin < 25 ? 0 : overMin < 50 ? 0.42 + ((overMin - 25) / 25) * 0.2 : 1
-  return { dull, lid }
+  return { dry, lid }
 }
 
 // Minutes of the current break actually taken so far (capped at its length).
@@ -170,10 +189,13 @@ export function standUp(state, { now = Date.now(), today, id, historyLimit = 200
     minutes: Math.round(worked / 60),
   }
 
+  const day = dayStats(state, today)
+
   return {
     ...state,
     pomodoroHistory: [...(state.pomodoroHistory || []), entry].slice(-historyLimit),
     focusRun: { ...run, blocks, focusMin: run.focusMin + worked / 60 },
+    focusDay: { ...day, blocks: day.blocks + (counted ? 1 : 0), focusMin: day.focusMin + worked / 60 },
     focusTotals: counted
       ? { ...totals, blocks: totals.blocks + 1, streak: nextStreak(totals.streak, today) }
       : totals,
@@ -191,6 +213,13 @@ export function standUp(state, { now = Date.now(), today, id, historyLimit = 200
       speed: speedOf(session),
     },
   }
+}
+
+// add the minutes of a finished break to today's totals
+function withMoved(state, moved, today) {
+  if (!today || moved <= 0) return state
+  const day = dayStats(state, today)
+  return { ...state, focusDay: { ...day, moveMin: day.moveMin + moved } }
 }
 
 function closeRun(state, run, now) {
@@ -218,26 +247,37 @@ function bankBreak(state, now) {
   const run = state.focusRun || emptyRun()
   const moved = movedMinutes(session, now)
   const progress = Math.min(settings.blocks, run.progress + Math.min(1, moved / settings.breakMin))
-  return { run: { ...run, progress, moveMin: run.moveMin + moved }, done: progress >= settings.blocks - EPS }
+  return { run: { ...run, progress, moveMin: run.moveMin + moved }, moved, done: progress >= settings.blocks - EPS }
 }
 
 // Come back from a break: next focus block, or the end of the run.
-export function backToFocus(state, { now = Date.now(), id }) {
+export function backToFocus(state, { now = Date.now(), id, today }) {
   const session = state.activeSession
   if (!session || session.mode !== 'break') return state
-  const { run, done } = bankBreak(state, now)
-  if (done) return closeRun(state, run, now)
-  const next = { ...state, focusRun: run }
+  const { run, moved, done } = bankBreak(state, now)
+  const counted = withMoved(state, moved, today)
+  if (done) return closeRun(counted, run, now)
+  const next = { ...counted, focusRun: run }
   return { ...next, activeSession: focusSession(next, { now, taskId: session.taskId, id, speed: speedOf(session) }) }
 }
 
 // The last segment filled up while the break is still running: finish now
 // rather than making the user sit out the rest of the break.
-export function finishIfComplete(state, { now = Date.now() }) {
+export function finishIfComplete(state, { now = Date.now(), today }) {
   const session = state.activeSession
   if (!session || session.mode !== 'break') return state
-  const { run, done } = bankBreak(state, now)
-  return done ? closeRun(state, run, now) : state
+  const { run, moved, done } = bankBreak(state, now)
+  return done ? closeRun(withMoved(state, moved, today), run, now) : state
+}
+
+// The computer was left alone during a focus block: the break began when the
+// user walked away (`since`), not when that was noticed.
+export function stepAway(state, { since, today, id, historyLimit }) {
+  const session = state.activeSession
+  if (!session || session.mode !== 'focus' || session.status !== 'running') return state
+  const from = Math.max(since, new Date(session.startedAt).getTime())
+  const next = standUp(state, { now: from, today, id, historyLimit })
+  return { ...next, activeSession: { ...next.activeSession, auto: true } }
 }
 
 // "Five more minutes" — once per block, only after the time is up.
@@ -293,8 +333,8 @@ export function toggleAtDesk(state) {
 export function changeSetting(state, key, direction) {
   const settings = focusSettings(state)
   let value
-  if (key === 'autoContinue') {
-    value = !settings.autoContinue
+  if (typeof FOCUS_DEFAULTS[key] === 'boolean') {
+    value = !settings[key]
   } else {
     const [min, max, step] = FOCUS_LIMITS[key]
     value = clamp(settings[key] + step * direction, min, max)

@@ -1,8 +1,31 @@
+import { useState } from 'react'
 import { Minus, Plus } from 'lucide-react'
 import Modal from './ui/Modal'
 import ConfirmButton from './ui/ConfirmButton'
 import { useTranslation } from '../i18n/LanguageContext'
 import { FOCUS_LIMITS, runLengthMinutes } from '../lib/focusRun'
+import { awayDetectionSupported, requestAwayPermission } from '../hooks/useAwayDetection'
+import { canUseNotifications } from '../hooks/useReminders'
+
+function Toggle({ label, note, checked, onChange }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={onChange}
+      className="flex items-center justify-between gap-3 rounded-2xl border-2 border-border px-3.5 py-3 text-left"
+    >
+      <span className="min-w-0">
+        <span className="block text-[14px] font-extrabold text-textPrimary">{label}</span>
+        {note && <span className="block text-[12px] font-semibold text-textMuted">{note}</span>}
+      </span>
+      <span className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${checked ? 'bg-accent' : 'bg-borderStrong'}`}>
+        <span className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-[left] duration-150 ${checked ? 'left-6' : 'left-1'}`} />
+      </span>
+    </button>
+  )
+}
 
 function Stepper({ label, note, value, display, limits, onStep }) {
   const { t } = useTranslation()
@@ -40,10 +63,31 @@ export default function FocusSettingsModal({ open, onClose, timer }) {
   const m = total % 60
   const length = h && m ? t('durationHM', { h, m }) : h ? t('durationH', { h }) : t('durationM', { m })
   const minutes = (n) => t('settingMinutes', { n })
+  const [permission, setPermission] = useState(() => (canUseNotifications() ? Notification.permission : 'unsupported'))
+  const today = timer.today
+
+  // turning "notice when I get up" on needs the browser's permission first
+  async function toggleAutoAway() {
+    if (!settings.autoAway && (await requestAwayPermission()) !== 'granted') return
+    changeSetting('autoAway')
+  }
+
+  async function allowNotifications() {
+    try {
+      setPermission(await Notification.requestPermission())
+    } catch {
+      setPermission(Notification.permission)
+    }
+  }
 
   return (
     <Modal open={open} onClose={onClose} title={t('focusSettingsTitle')}>
       <div className="flex flex-col gap-4">
+        {(today.blocks > 0 || today.focusMin >= 1) && (
+          <p className="-mt-1 rounded-2xl bg-surfaceAlt px-3.5 py-2.5 text-[13px] font-bold text-textSecondary tabular-nums">
+            {t('todayStats', { blocks: today.blocks, focus: Math.round(today.focusMin), move: Math.round(today.moveMin) })}
+          </p>
+        )}
         <Stepper
           label={t('settingBlocks')}
           note={t('runLength', { time: length })}
@@ -63,20 +107,32 @@ export default function FocusSettingsModal({ open, onClose, timer }) {
           onStep={(d) => changeSetting('longBreakMin', d)}
         />
 
-        <button
-          type="button"
-          role="switch"
-          aria-checked={settings.autoContinue}
-          onClick={() => changeSetting('autoContinue')}
-          className="flex items-center justify-between gap-3 rounded-2xl border-2 border-border px-3.5 py-3 text-left"
-        >
-          <span className="text-[14px] font-extrabold text-textPrimary">{t('settingAuto')}</span>
-          <span className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${settings.autoContinue ? 'bg-accent' : 'bg-borderStrong'}`}>
-            <span
-              className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-[left] duration-150 ${settings.autoContinue ? 'left-6' : 'left-1'}`}
-            />
-          </span>
-        </button>
+        <Toggle label={t('settingAuto')} checked={settings.autoContinue} onChange={() => changeSetting('autoContinue')} />
+        <Toggle label={t('settingSound')} checked={settings.sound} onChange={() => changeSetting('sound')} />
+        {awayDetectionSupported && (
+          <Toggle label={t('settingAutoAway')} note={t('settingAutoAwayNote')} checked={settings.autoAway} onChange={toggleAutoAway} />
+        )}
+        {permission !== 'unsupported' && (
+          <div className="flex items-center justify-between gap-3 rounded-2xl border-2 border-border px-3.5 py-3">
+            <span className="min-w-0">
+              <span className="block text-[14px] font-extrabold text-textPrimary">{t('settingNotify')}</span>
+              <span className="block text-[12px] font-semibold text-textMuted">
+                {permission === 'denied' ? t('notifyBlocked') : t('settingNotifyNote')}
+              </span>
+            </span>
+            {permission === 'default' ? (
+              <button
+                type="button"
+                onClick={allowNotifications}
+                className="press h-9 shrink-0 rounded-xl bg-blueSoft px-3 text-[13px] font-extrabold text-blueInk shadow-[0_3px_0_#B5E5FB]"
+              >
+                {t('notifyAllow')}
+              </button>
+            ) : (
+              permission === 'granted' && <span className="shrink-0 text-[13px] font-extrabold text-accentInk">{t('notifyOn')}</span>
+            )}
+          </div>
+        )}
 
         <div className="border-t-2 border-border pt-3">
           <ConfirmButton

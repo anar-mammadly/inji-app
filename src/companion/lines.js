@@ -12,6 +12,8 @@ export const COMPANION_LINES = {
     helloMorning: ['Sabahın xeyir! Günün ilk incisi səni gözləyir.', 'Sabahın xeyir! Bu gün nə planlaşdırmısan?'],
     helloEvening: ['Axşamın xeyir. Bir az da işləyək, sonra dincələrsən.'],
     helloNight: ['Gecdir. Bir blok edək, sonra yat.'],
+    helloMonday: ['Bazar ertəsi! Həftəni yaxşı başlayaq.'],
+    helloFriday: ['Cümə axşamüstü. Son bir-iki blok, sonra istirahət.'],
     // ── a focus block ──
     focusStart: [
       '{min} dəqiqə başladı. Uğurlar!',
@@ -30,17 +32,18 @@ export const COMPANION_LINES = {
     // ── overtime: the block is over but nobody stood up ──
     overtime: [
       'Vaxt çoxdan bitib. Qısa bir gəzinti kifayətdir.',
-      'Mən solğunlaşıram, sən yorulursan. Fasilə verək.',
+      'Mən quruyuram, sən yorulursan. Fasilə verək.',
       'İş qaçmır. Əvvəlcə bir az hərəkət.',
       'Fasiləsiz işləmək səmərəni azaldır. Qalx.',
       'Hələ buradayıq? Ayağa qalxmaq cəmi bir saniyədir.',
     ],
-    wearDull: ['Tozlanmağa başladım…', 'Parıltım getdikcə azalır.'],
-    wearClosing: ['Balıqqulağım bağlanır. Qalx ki, açılım.'],
+    wearDry: ['Suyum çəkilir, quruyuram…', 'Parıltım getdi. Mənə su lazımdır, sənə hərəkət.'],
+    wearClosing: ['Qurudum, balıqqulağım bağlanır. Qalx ki, açılım.'],
     wearShut: ['Qapandım. Məni açmaq üçün ayağa qalx.'],
     snooze: ['Yaxşı, beş dəqiqə də. Sonra mütləq qalxırıq.'],
     // ── standing up and the break ──
-    standUp: ['Afərin, qalxdın!', 'Tozumu silkələdim. Hərəkət vaxtıdır.', 'Əla qərar. Bir az gəzək.', 'Budur! Bədənin sevinir.'],
+    standUp: ['Afərin, qalxdın!', 'Suyum qayıtdı! Hərəkət vaxtıdır.', 'Əla qərar. Bir az gəzək.', 'Budur! Bədənin sevinir.'],
+    awayBreak: ['Getdiyini gördüm. Fasiləni özüm başlatdım.'],
     standUpEarly: ['Blok yarımçıq qaldı, amma fasilə də işin bir hissəsidir.'],
     longBreak: ['{min} dəqiqəlik uzun fasilə. Bunu qazanmısan.'],
     walkTip: [
@@ -75,6 +78,7 @@ export const COMPANION_LINES = {
     blocks50: ['50 blok! Bu artıq vərdişdir.'],
     blocks100: ['100 blok. Sən əsl ustasan.'],
     // ── everything else ──
+    pipOpen: ['İndi həmişə göz qabağındayam.'],
     muteOn: ['Səssiz rejim: saat {time}-dək narahat etmirəm.'],
     muteOff: ['Səs yenidən açıqdır.'],
     paused: ['Dayandıq. Hazır olanda davam et.', 'Fasilə verdin. Gözləyirəm.'],
@@ -91,6 +95,8 @@ export const COMPANION_LINES = {
     helloMorning: ['Good morning! The first pearl of the day is waiting.', 'Good morning! What is the plan for today?'],
     helloEvening: ['Good evening. A little more work, then you rest.'],
     helloNight: ["It's late. One block, then sleep."],
+    helloMonday: ["Monday! Let's start the week well."],
+    helloFriday: ['Friday afternoon. A last block or two, then rest.'],
     focusStart: [
       '{min} minutes, starting now. Good luck!',
       "I'll stay quiet so you can think.",
@@ -107,16 +113,17 @@ export const COMPANION_LINES = {
     ],
     overtime: [
       'Time ran out a while ago. A short walk is enough.',
-      "I'm fading and you're tiring. Let's take the break.",
+      "I'm drying out and you're tiring. Let's take the break.",
       "The work isn't going anywhere. Move first.",
       'Working without breaks gets you less done. Up.',
       'Still here? Standing up takes one second.',
     ],
-    wearDull: ["I'm starting to gather dust…", 'My shine is going.'],
-    wearClosing: ['My shell is closing. Stand up and it opens.'],
+    wearDry: ["My water is going. I'm drying out…", 'My shine is gone. I need water, you need to move.'],
+    wearClosing: ["I've dried out and my shell is closing. Stand up and it opens."],
     wearShut: ["I've closed up. Stand up to open me."],
     snooze: ['All right, five more minutes. Then we really get up.'],
-    standUp: ['Well done, you are up!', 'Dust shaken off. Time to move.', "Good call. Let's walk a little.", 'There! Your body is glad.'],
+    standUp: ['Well done, you are up!', 'The water is back! Time to move.', "Good call. Let's walk a little.", 'There! Your body is glad.'],
+    awayBreak: ['I saw you step away. I started the break for you.'],
     standUpEarly: ['The block was cut short, but a break is part of the work too.'],
     longBreak: ['A long break: {min} minutes. You have earned it.'],
     walkTip: [
@@ -149,6 +156,7 @@ export const COMPANION_LINES = {
     streak7: ['A week without skipping your breaks. Keep going!'],
     blocks50: ['50 blocks! This is a habit now.'],
     blocks100: ['100 blocks. You are a master at this.'],
+    pipOpen: ["Now I'm always in view."],
     muteOn: ["Quiet mode: I won't disturb you until {time}."],
     muteOff: ['Sound is back on.'],
     paused: ["Paused. Carry on when you're ready.", "On hold. I'll wait."],
@@ -173,9 +181,12 @@ export function pickLine(lang, event, memory = {}, vars = {}, random = Math.rand
   return pool[index].replace(/\{(\w+)\}/g, (_, name) => String(vars[name] ?? ''))
 }
 
-// Which greeting fits the hour (0–23).
-export function greetingEvent(hour) {
+// Which greeting fits the moment: the hour (0–23) and, optionally, the day of
+// the week (0 = Sunday), which brings a Monday-morning and a Friday-afternoon one.
+export function greetingEvent(hour, weekday = -1) {
   if (hour < 5) return 'helloNight'
+  if (weekday === 1 && hour < 11) return 'helloMonday'
+  if (weekday === 5 && hour >= 15 && hour < 19) return 'helloFriday'
   if (hour < 11) return 'helloMorning'
   if (hour >= 19) return 'helloEvening'
   return 'hello'

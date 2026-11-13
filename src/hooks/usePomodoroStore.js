@@ -4,6 +4,8 @@ import { POMODORO_HISTORY_LIMIT } from '../lib/appState'
 import {
   backToFocus,
   cancelFocus,
+  dayStats,
+  stepAway,
   changeSetting,
   emptyRun,
   emptyTotals,
@@ -44,10 +46,13 @@ export function usePomodoroStore(state, setState) {
     totals: state.focusTotals || emptyTotals(),
     lastRun: state.lastFocusRun || null,
     muteUntil: state.focusMuteUntil || null,
+    today: dayStats(state, todayISO()),
     computeSecondsLeft,
 
     startSession: (taskId = null) => setState((s) => startFocus(s, { ...at(), taskId, speed: SPEED })),
     standUp: () => setState((s) => standUp(s, at())),
+    // the break began when the user walked away (`since`), see useAwayDetection
+    stepAway: (since) => setState((s) => stepAway(s, { ...at(), since })),
     backToFocus: () => setState((s) => backToFocus(s, at())),
     finishIfComplete: () => setState((s) => finishIfComplete(s, at())),
     snooze: () => setState((s) => snooze(s, at())),

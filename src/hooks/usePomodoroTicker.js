@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { NUDGE_MINUTES, focusSettings, isMuted, remainingSeconds, runProgress } from '../lib/focusRun'
-import { playTimerEndSound } from '../utils/sound'
+import { playCompanionSound } from '../utils/sound'
 
 // Watches the running session from the app shell, so it works on every page:
 //   • focus: fires the reminders around and after the end of the block
@@ -9,7 +9,10 @@ import { playTimerEndSound } from '../utils/sound'
 //     closes the run as soon as its last segment is full.
 //
 // `onEvent(type, detail)` lets the app notify; sounds are played here.
+// Returns `pulse()`, which runs a check right now: a background tab's timers
+// slow down, so the floating companion window (whose timers do not) calls it.
 export function usePomodoroTicker(state, actions, onEvent) {
+  const pulse = useRef(() => {})
   const latest = useRef({ state, actions, onEvent })
   latest.current = { state, actions, onEvent }
   const fired = useRef({ id: null, nudge: -1, breakEnded: false })
@@ -26,7 +29,9 @@ export function usePomodoroTicker(state, actions, onEvent) {
       const { state: current, actions: act, onEvent: emit } = latest.current
       const live = current.activeSession
       if (!live || live.id !== id || live.status !== 'running') return
-      const muted = isMuted(current)
+      const settings = focusSettings(current)
+      const muted = isMuted(current) || !settings.sound
+      const quiet = isMuted(current)
       const left = remainingSeconds(live)
 
       if (fired.current.id !== id) {
@@ -43,35 +48,38 @@ export function usePomodoroTicker(state, actions, onEvent) {
         if (next < NUDGE_MINUTES.length && -left / 60 >= NUDGE_MINUTES[next]) {
           fired.current.nudge = next
           const at = NUDGE_MINUTES[next]
-          if (at >= 0 && !muted) playTimerEndSound()
-          emit?.(at < 0 ? 'focusSoon' : at === 0 ? 'focusDone' : 'overtime', { muted })
+          if (at >= 0 && !muted) playCompanionSound('chime')
+          emit?.(at < 0 ? 'focusSoon' : at === 0 ? 'focusDone' : 'overtime', { muted: quiet })
         }
         return
       }
 
       // break
-      const settings = focusSettings(current)
       if (runProgress(current) >= settings.blocks - 1e-6) {
-        if (!muted) playTimerEndSound()
-        emit?.('runDone', { muted })
+        if (!muted) playCompanionSound('string')
+        emit?.('runDone', { muted: quiet })
         act.finishIfComplete()
         return
       }
       if (left <= 0 && !fired.current.breakEnded) {
         fired.current.breakEnded = true
-        if (!muted) playTimerEndSound()
-        emit?.('breakDone', { muted })
+        if (!muted) playCompanionSound('chime')
+        emit?.('breakDone', { muted: quiet })
         if (settings.autoContinue) act.backToFocus()
       }
     }
 
     tick()
+    pulse.current = tick
     const interval = setInterval(tick, speed > 1 ? 200 : 1000)
     const onVisible = () => document.visibilityState === 'visible' && tick()
     document.addEventListener('visibilitychange', onVisible)
     return () => {
+      pulse.current = () => {}
       clearInterval(interval)
       document.removeEventListener('visibilitychange', onVisible)
     }
   }, [id, running, speed])
+
+  return pulse
 }
