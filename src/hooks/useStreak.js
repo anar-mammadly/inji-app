@@ -1,28 +1,34 @@
-import { format, subDays } from 'date-fns'
+import { addDaysISO, todayISO, yesterdayISO } from '../utils/day'
 
-function todayISO() {
-  return format(new Date(), 'yyyy-MM-dd')
+// the jar's "week" is today plus the six days before it
+const WEEK_SPAN_DAYS = 6
+
+// Entries of the per-day history that still fall inside the rolling week.
+// History is appended once per *active* day, so after a break the last six
+// entries can reach back for weeks — filter by date, never by position.
+export function historyInWeek(history = [], today = todayISO()) {
+  const oldest = addDaysISO(today, -WEEK_SPAN_DAYS)
+  return history.filter((h) => h && h.date >= oldest && h.date < today)
 }
 
-function yesterdayISO() {
-  return format(subDays(new Date(), 1), 'yyyy-MM-dd')
+export function weeklyBeadCount(state, today = todayISO()) {
+  return (state.beadCount || 0) + historyInWeek(state.history, today).reduce((sum, h) => sum + (h.count || 0), 0)
 }
 
-const HISTORY_LIMIT = 6
-
-export function applyDateRollover({ beadCount, lastActiveDate, streakDays, history = [], todayBeadCategories = [] }) {
-  const today = todayISO()
-
+export function applyDateRollover(
+  { beadCount, lastActiveDate, streakDays, history = [], todayBeadCategories = [] },
+  today = todayISO(),
+) {
   if (lastActiveDate === today) {
     return { beadCount, lastActiveDate, streakDays, history, todayBeadCategories }
   }
 
-  const yesterday = yesterdayISO()
+  const yesterday = addDaysISO(today, -1)
   let nextStreak = streakDays
   let nextHistory = history
 
   if (lastActiveDate) {
-    nextHistory = [...history, { date: lastActiveDate, count: beadCount }].slice(-HISTORY_LIMIT)
+    nextHistory = historyInWeek([...history, { date: lastActiveDate, count: beadCount }], today)
   }
 
   if (lastActiveDate === yesterday && beadCount > 0) {

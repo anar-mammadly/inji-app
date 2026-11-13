@@ -3,6 +3,7 @@ import { useDroppable } from '@dnd-kit/core'
 import { Plus, PackageOpen } from 'lucide-react'
 import TaskCard from './TaskCard'
 import AddTaskForm from './AddTaskForm'
+import ConfirmButton from './ui/ConfirmButton'
 import { useTranslation } from '../i18n/LanguageContext'
 
 const EMPTY_KEYS = { todo: 'emptyTodo', inprog: 'emptyInprog', done: 'emptyDone' }
@@ -14,12 +15,12 @@ export const COLUMN_LABEL_KEYS = {
 }
 
 const COLUMN_COLORS = {
-  todo: { text: '#0E8FCE', bg: '#DDF4FF' },
-  inprog: { text: '#E07C00', bg: '#FFE8CC' },
-  done: { text: '#46A302', bg: '#DFFAB8' },
+  todo: { text: '#086393', bg: '#DDF4FF' },
+  inprog: { text: '#8F4B00', bg: '#FFE8CC' },
+  done: { text: '#2A6E00', bg: '#DFFAB8' },
 }
 
-export default function Column({ colId, tasks, onStart, onBack, onComplete, onAdd, onDelete, onEdit, cardRefs, className = '' }) {
+export default function Column({ colId, tasks, onStart, onBack, onComplete, onAdd, onDelete, onEdit, onClearDone, cardRefs, className = '' }) {
   const { t } = useTranslation()
   const [adding, setAdding] = useState(false)
   const canAdd = colId === 'todo' || colId === 'inprog'
@@ -74,10 +75,20 @@ export default function Column({ colId, tasks, onStart, onBack, onComplete, onAd
         ))}
       </div>
 
+      {colId === 'done' && tasks.length > 0 && onClearDone && (
+        <ConfirmButton
+          onConfirm={onClearDone}
+          triggerLabel={t('clearDone')}
+          confirmMessage={t('clearDoneConfirm')}
+          confirmLabel={t('clearDoneYes')}
+          className="mt-2"
+        />
+      )}
+
       {canAdd && !adding && (
         <button
           onClick={() => setAdding(true)}
-          className="mt-2 flex items-center justify-center gap-1.5 h-11 rounded-2xl border-2 border-dashed border-borderStrong text-[13px] font-extrabold text-textSecondary hover:bg-surfaceAlt hover:border-accent hover:text-accent transition-colors"
+          className="mt-2 flex items-center justify-center gap-1.5 h-11 rounded-2xl border-2 border-dashed border-borderStrong text-[13px] font-extrabold text-textSecondary hover:bg-surfaceAlt hover:border-accent hover:text-accentInk transition-colors"
         >
           <Plus size={16} strokeWidth={3} />
           {t('addTask')}

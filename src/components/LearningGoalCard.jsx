@@ -8,9 +8,9 @@ import { chipClass, iconButtonClass } from './ui/styles'
 
 // each learning sub-category gets its own candy color + icon
 export const SUB_CATEGORY_STYLES = {
-  books: { icon: BookOpen, color: '#FF9600', dark: '#E07C00', soft: '#FFE8CC' },
-  courses: { icon: GraduationCap, color: '#1CB0F6', dark: '#0E8FCE', soft: '#DDF4FF' },
-  skills: { icon: Sparkles, color: '#CE82FF', dark: '#A855F7', soft: '#F3E4FF' },
+  books: { icon: BookOpen, color: '#FF9600', dark: '#8F4B00', soft: '#FFE8CC' },
+  courses: { icon: GraduationCap, color: '#1CB0F6', dark: '#086393', soft: '#DDF4FF' },
+  skills: { icon: Sparkles, color: '#CE82FF', dark: '#7429C4', soft: '#F3E4FF' },
 }
 
 const REMINDER_OPTIONS = [
@@ -59,7 +59,7 @@ export default function LearningGoalCard({ goal, onUpdateProgress, onSetReminder
         </div>
         <button
           onClick={onDelete}
-          className={`${iconButtonClass} -mr-1.5 -mt-1 shrink-0 hover:!bg-pomSoft hover:!text-coral`}
+          className={`${iconButtonClass} -mr-1.5 -mt-1 shrink-0 hover:!bg-pomSoft hover:!text-coralInk`}
           aria-label={t('delete')}
         >
           <X size={16} strokeWidth={2.6} />
@@ -82,7 +82,7 @@ export default function LearningGoalCard({ goal, onUpdateProgress, onSetReminder
             / <span className="tabular-nums">{goal.targetProgress}</span> {goal.unit}
           </span>
           {isComplete && (
-            <span className={`${chipClass} ml-auto shrink-0 bg-accentSoft text-accentDark`}>{t('goalsDone')}</span>
+            <span className={`${chipClass} ml-auto shrink-0 bg-accentSoft text-accentInk`}>{t('goalsDone')}</span>
           )}
         </div>
         <ProgressBar
@@ -96,7 +96,7 @@ export default function LearningGoalCard({ goal, onUpdateProgress, onSetReminder
 
       <div>
         <div className="flex items-center gap-1.5 text-[13px] font-bold text-textSecondary mb-2">
-          <Bell size={14} strokeWidth={2.5} className="text-yellowDark" />
+          <Bell size={14} strokeWidth={2.5} className="text-yellowInk" />
           {t('reminderEvery')}
         </div>
         <div className="flex flex-wrap gap-2">

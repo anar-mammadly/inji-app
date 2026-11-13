@@ -9,6 +9,23 @@
 
   /* bottom padding that clears the mobile tab bar + the home indicator */
   .pb-tabbar { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+
+  /* Small icon buttons keep their size on screen but answer to a 44px touch
+     area on phones and tablets. */
+  .hit { position: relative; }
+  @media (pointer: coarse) {
+    .hit::after { content: ''; position: absolute; inset: -8px; }
+  }
+
+  /* The part of a task card you grab. A press-and-hold starts the drag, so an
+     ordinary swipe that begins here still scrolls the page; text selection and
+     the iOS long-press menu would get in the way of the hold. */
+  .drag-handle {
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
 }
 
 @layer components {
@@ -52,6 +69,7 @@ body {
   overscroll-behavior-y: none;
   -webkit-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 #root {
@@ -68,11 +86,21 @@ a {
   background: #dffab8;
 }
 
-/* Visible keyboard focus everywhere; mouse/touch clicks stay clean */
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+/* Visible keyboard focus everywhere; mouse/touch clicks stay clean. The ring
+   follows each element's own corner radius. */
 :focus-visible {
-  outline: 2px solid #1cb0f6;
+  outline: 2px solid #086393;
   outline-offset: 2px;
-  border-radius: 8px;
 }
 
 * {
@@ -99,6 +127,81 @@ a {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ── Sədəf, the companion ─────────────────────────────────────────────── */
+.companion-handle {
+  touch-action: none; /* dragging it must not scroll the page */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.companion-body {
+  display: block;
+  overflow: visible;
+  transform-origin: 50% 92%;
+}
+
+.companion-idle { animation: companion-bob 3.6s ease-in-out infinite; }
+.companion-focus,
+.companion-sleepy { animation: companion-breathe 5.5s ease-in-out infinite; }
+.companion-break { animation: companion-sway 1.9s ease-in-out infinite; }
+.companion-cheer { animation: companion-hop 0.55s ease-out 2; }
+.companion-dizzy { animation: companion-wobble 0.7s ease-in-out 2; }
+.companion-held { transform: scale(1.07) rotate(-5deg); transition: transform 120ms ease; }
+/* time is up: a small hop every couple of seconds, asking to be noticed */
+.companion-waiting { animation: companion-ask 2.4s ease-in-out infinite; }
+.companion-dull { animation: companion-breathe 7s ease-in-out infinite; }
+.companion-stretch { animation: companion-stretch 2.4s ease-in-out infinite; }
+
+.companion-blink {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: companion-blink 4.8s infinite;
+}
+
+.companion-sparkle { animation: companion-twinkle 0.5s ease-in-out infinite alternate; }
+
+@keyframes companion-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+@keyframes companion-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.025); }
+}
+@keyframes companion-sway {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+@keyframes companion-hop {
+  0%, 100% { transform: translateY(0) scale(1); }
+  40% { transform: translateY(-12px) scale(1.04, 0.97); }
+  75% { transform: translateY(0) scale(0.97, 1.03); }
+}
+@keyframes companion-wobble {
+  0%, 100% { transform: rotate(0); }
+  25% { transform: rotate(-14deg); }
+  75% { transform: rotate(14deg); }
+}
+@keyframes companion-blink {
+  0%, 94%, 100% { transform: scaleY(1); }
+  97% { transform: scaleY(0.1); }
+}
+@keyframes companion-ask {
+  0%, 70%, 100% { transform: translateY(0); }
+  80% { transform: translateY(-7px); }
+  90% { transform: translateY(0); }
+  95% { transform: translateY(-3px); }
+}
+@keyframes companion-stretch {
+  0%, 100% { transform: scale(1, 1); }
+  50% { transform: scale(0.95, 1.08); }
+}
+@keyframes companion-twinkle {
+  from { opacity: 0.45; }
+  to { opacity: 1; }
 }
 
 @keyframes ptr-spin {

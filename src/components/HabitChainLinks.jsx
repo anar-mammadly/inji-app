@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react'
-import { addDays, format, parseISO } from 'date-fns'
 import { motion } from 'framer-motion'
 import { Check } from 'lucide-react'
-import { darken } from '../utils/colors'
+import { darken, readableOn } from '../utils/colors'
+import { addDaysISO, todayISO } from '../utils/day'
 
 const LINK_SIZE = 36
 const CONNECTOR_WIDTH = 12
@@ -11,13 +11,11 @@ const CONNECTOR_WIDTH = 12
 // challenges (100 days) never widen the page on a phone.
 export default function HabitChainLinks({ startDate, targetDays, log, color = '#FF4B4B', onToggleDay }) {
   const scrollRef = useRef(null)
-  const todayKey = format(new Date(), 'yyyy-MM-dd')
-  const start = parseISO(startDate)
+  const todayKey = todayISO()
   const ledge = color.startsWith('#') ? darken(color, 0.18) : color
 
   const links = Array.from({ length: targetDays }, (_, i) => {
-    const date = addDays(start, i)
-    const key = format(date, 'yyyy-MM-dd')
+    const key = addDaysISO(startDate, i)
     return { day: i + 1, key, filled: !!log[key], isToday: key === todayKey, isPast: key < todayKey }
   })
 
@@ -61,7 +59,7 @@ export default function HabitChainLinks({ startDate, targetDays, log, color = '#
                   width: LINK_SIZE,
                   height: LINK_SIZE,
                   background: link.filled ? color : '#fff',
-                  color: link.filled ? '#fff' : link.isToday ? '#E07C00' : link.isPast ? '#9CA0A8' : '#6B7280',
+                  color: link.filled ? readableOn(color) : link.isToday ? '#8F4B00' : link.isPast ? '#636B78' : '#4B5563',
                   border: `2px solid ${link.filled ? ledge : '#E5E7EB'}`,
                   boxShadow: `0 3px 0 ${link.filled ? ledge : '#E5E7EB'}`,
                 }}

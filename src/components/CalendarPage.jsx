@@ -8,13 +8,13 @@ import {
   endOfWeek,
   eachDayOfInterval,
   isSameMonth,
-  isToday,
   format,
   parseISO,
 } from 'date-fns'
 import { az } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Check, Pencil, X, Clock, CalendarDays } from 'lucide-react'
 import { useTranslation } from '../i18n/LanguageContext'
+import { dateFromISO, todayISO } from '../utils/day'
 import Modal from './ui/Modal'
 import Button from './ui/Button'
 import Card from './ui/Card'
@@ -27,7 +27,7 @@ const WEEKDAY_LABELS_AZ = ['B.E', 'Ç.A', 'Ç', 'C.A', 'C', 'Ş', 'B']
 const WEEKDAY_LABELS_EN = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
 
 const navButtonClass =
-  'press flex h-10 w-10 items-center justify-center rounded-xl border-2 border-border bg-white text-textSecondary shadow-[0_3px_0_#E5E7EB] transition-colors hover:bg-surfaceAlt hover:text-blueDark'
+  'press flex h-10 w-10 items-center justify-center rounded-xl border-2 border-border bg-white text-textSecondary shadow-[0_3px_0_#E5E7EB] transition-colors hover:bg-surfaceAlt hover:text-blueInk'
 
 function EventItem({ event, onToggleDone, onEdit, onDelete }) {
   const { t } = useTranslation()
@@ -82,13 +82,13 @@ function EventItem({ event, onToggleDone, onEdit, onDelete }) {
         aria-label={t('markDone')}
         aria-pressed={!!event.done}
       >
-        {event.done && <Check size={14} strokeWidth={3.5} className="text-white" />}
+        {event.done && <Check size={14} strokeWidth={3.5} className="text-onAccent" />}
       </button>
       <div className="flex-1 min-w-0">
         {event.time && (
           <span
             className={`mb-1 inline-flex items-center gap-1 h-5 px-2 rounded-full text-[11px] font-bold tabular-nums ${
-              event.done ? 'bg-white text-textMuted' : 'bg-orangeSoft text-orangeDark'
+              event.done ? 'bg-white text-textMuted' : 'bg-orangeSoft text-orangeInk'
             }`}
           >
             <Clock size={11} strokeWidth={2.6} />
@@ -109,7 +109,7 @@ function EventItem({ event, onToggleDone, onEdit, onDelete }) {
         </button>
         <button
           onClick={onDelete}
-          className="flex h-9 w-9 items-center justify-center rounded-xl text-textMuted transition-colors hover:bg-pomSoft hover:text-coral"
+          className="flex h-9 w-9 items-center justify-center rounded-xl text-textMuted transition-colors hover:bg-pomSoft hover:text-coralInk"
           aria-label={t('deleteEntry')}
         >
           <X size={16} strokeWidth={2.6} />
@@ -176,7 +176,8 @@ function DayDetailModal({ open, onClose, dateKey, events, lang, onAdd, onToggleD
 
 export default function CalendarPage({ events, onAddEvent, onEditEvent, onDeleteEvent, onToggleEventDone }) {
   const { t, lang } = useTranslation()
-  const [cursor, setCursor] = useState(new Date())
+  const todayKey = todayISO()
+  const [cursor, setCursor] = useState(() => dateFromISO(todayKey))
   const [selectedDate, setSelectedDate] = useState(null)
 
   const monthStart = startOfMonth(cursor)
@@ -193,7 +194,7 @@ export default function CalendarPage({ events, onAddEvent, onEditEvent, onDelete
 
   const weekdayLabels = lang === 'az' ? WEEKDAY_LABELS_AZ : WEEKDAY_LABELS_EN
   const locale = lang === 'az' ? az : undefined
-  const viewingCurrentMonth = isSameMonth(cursor, new Date())
+  const viewingCurrentMonth = isSameMonth(cursor, dateFromISO(todayKey))
 
   return (
     <Page width="normal">
@@ -207,18 +208,18 @@ export default function CalendarPage({ events, onAddEvent, onEditEvent, onDelete
             </h2>
             {!viewingCurrentMonth && (
               <button
-                onClick={() => setCursor(new Date())}
-                className="press shrink-0 h-8 px-3 rounded-xl bg-blueSoft text-blueDark text-[12px] font-extrabold shadow-[0_3px_0_#B5E5FB]"
+                onClick={() => setCursor(dateFromISO(todayKey))}
+                className="press shrink-0 h-8 px-3 rounded-xl bg-blueSoft text-blueInk text-[12px] font-extrabold shadow-[0_3px_0_#B5E5FB]"
               >
                 {t('todayPanel')}
               </button>
             )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <button onClick={() => setCursor((c) => subMonths(c, 1))} className={navButtonClass} aria-label="Previous month">
+            <button onClick={() => setCursor((c) => subMonths(c, 1))} className={navButtonClass} aria-label={t('calendarPrevMonth')}>
               <ChevronLeft size={18} strokeWidth={2.6} />
             </button>
-            <button onClick={() => setCursor((c) => addMonths(c, 1))} className={navButtonClass} aria-label="Next month">
+            <button onClick={() => setCursor((c) => addMonths(c, 1))} className={navButtonClass} aria-label={t('calendarNextMonth')}>
               <ChevronRight size={18} strokeWidth={2.6} />
             </button>
           </div>
@@ -239,7 +240,7 @@ export default function CalendarPage({ events, onAddEvent, onEditEvent, onDelete
             const hasEvents = dayEvents.length > 0
             const allDone = hasEvents && dayEvents.every((e) => e.done)
             const inMonth = isSameMonth(day, cursor)
-            const today = isToday(day)
+            const today = dateKey === todayKey
             const preview = [...dayEvents].sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'))
 
             return (
@@ -258,7 +259,7 @@ export default function CalendarPage({ events, onAddEvent, onEditEvent, onDelete
                 <span
                   className={`inline-flex items-center justify-center h-6 min-w-[24px] sm:self-start sm:px-1.5 rounded-full text-[13px] sm:text-[14px] tabular-nums ${
                     today
-                      ? 'bg-accent text-white font-extrabold px-1.5'
+                      ? 'bg-accent text-onAccent font-extrabold px-1.5'
                       : inMonth
                         ? `text-textPrimary ${hasEvents ? 'font-extrabold' : 'font-semibold'}`
                         : 'text-textMuted font-semibold'
@@ -282,7 +283,7 @@ export default function CalendarPage({ events, onAddEvent, onEditEvent, onDelete
                       <span
                         key={e.id}
                         className={`block truncate text-left h-5 leading-5 px-1.5 rounded-md text-[11px] font-semibold ${
-                          e.done ? 'bg-accentSoft text-accentDark line-through' : 'bg-orangeSoft text-orangeDark'
+                          e.done ? 'bg-accentSoft text-accentInk line-through' : 'bg-orangeSoft text-orangeInk'
                         }`}
                       >
                         {e.time ? `${e.time} ` : ''}

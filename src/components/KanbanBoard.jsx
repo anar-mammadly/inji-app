@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
-import { DndContext, DragOverlay, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core'
+import { DndContext, DragOverlay, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { useTranslation } from '../i18n/LanguageContext'
 import Column, { COLUMN_LABEL_KEYS } from './Column'
 import TaskCard from './TaskCard'
@@ -9,7 +9,7 @@ import Segmented from './ui/Segmented'
 const COLUMN_IDS = ['todo', 'inprog', 'done']
 const noop = () => {}
 
-export default function KanbanBoard({ tasks, onStart, onBack, onComplete, onAdd, onDelete, onEdit, onDropTask, cardRefs }) {
+export default function KanbanBoard({ tasks, onStart, onBack, onComplete, onAdd, onDelete, onEdit, onDropTask, onClearDone, cardRefs }) {
   const { t } = useTranslation()
   // phones show one column at a time; tablets and up show all three
   const [mobileCol, setMobileCol] = useState('todo')
@@ -17,9 +17,13 @@ export default function KanbanBoard({ tasks, onStart, onBack, onComplete, onAdd,
   // above every column instead of being clipped/hidden behind them
   const [activeId, setActiveId] = useState(null)
   const activeTask = activeId ? tasks.find((task) => task.id === activeId) : null
+  // Mouse drags start after a few pixels; touch drags after a short press-and-
+  // hold, so an ordinary swipe over a card still scrolls the page. The keyboard
+  // sensor lets a focused card be picked up with Space and moved with arrows.
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
+    useSensor(KeyboardSensor),
   )
 
   function handleDragEnd(event) {
@@ -32,6 +36,7 @@ export default function KanbanBoard({ tasks, onStart, onBack, onComplete, onAdd,
   return (
     <DndContext
       sensors={sensors}
+      accessibility={{ screenReaderInstructions: { draggable: t('dragInstructions') } }}
       onDragStart={(event) => setActiveId(event.active.id)}
       onDragEnd={handleDragEnd}
       onDragCancel={() => setActiveId(null)}
@@ -60,6 +65,7 @@ export default function KanbanBoard({ tasks, onStart, onBack, onComplete, onAdd,
               onAdd={onAdd}
               onDelete={onDelete}
               onEdit={onEdit}
+              onClearDone={onClearDone}
               cardRefs={cardRefs}
             />
           ))}

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Flame, X, PartyPopper, Plus, Pencil } from 'lucide-react'
-import { addDays, format, parseISO, subDays } from 'date-fns'
+import { addDaysISO, todayISO } from '../utils/day'
 import { useTranslation } from '../i18n/LanguageContext'
 import HabitChainLinks from './HabitChainLinks'
 import Card from './ui/Card'
@@ -15,7 +15,7 @@ function tint(color, alpha = '22') {
 
 export default function HabitChainCard({ habit, log, onToggleToday, onToggleDay, onDelete, onEdit, onAddOption, onDeleteOption }) {
   const { t } = useTranslation()
-  const todayKey = format(new Date(), 'yyyy-MM-dd')
+  const todayKey = todayISO()
   const doneToday = !!log[todayKey]
   const [picking, setPicking] = useState(false)
   const [note, setNote] = useState('')
@@ -28,14 +28,12 @@ export default function HabitChainCard({ habit, log, onToggleToday, onToggleDay,
   const startDate = habit.startDate || todayKey
   const subOptions = habit.subOptions || []
   const color = habit.color || '#FF4B4B'
-  const filledCount = Array.from({ length: targetDays }, (_, i) => format(addDays(parseISO(startDate), i), 'yyyy-MM-dd')).filter(
-    (key) => !!log[key],
-  ).length
+  const filledCount = Array.from({ length: targetDays }, (_, i) => addDaysISO(startDate, i)).filter((key) => !!log[key]).length
   const isComplete = filledCount >= targetDays
 
   // current run of consecutive done days, ending today (or yesterday while today is still open)
   let streak = 0
-  for (let d = doneToday ? new Date() : subDays(new Date(), 1); log[format(d, 'yyyy-MM-dd')]; d = subDays(d, 1)) streak++
+  for (let day = doneToday ? todayKey : addDaysISO(todayKey, -1); log[day]; day = addDaysISO(day, -1)) streak++
 
   function handleChainToggle(dateISO) {
     if (dateISO === todayKey) {
@@ -98,7 +96,7 @@ export default function HabitChainCard({ habit, log, onToggleToday, onToggleDay,
           title={t('streak', { n: streak })}
         >
           {isComplete ? (
-            <PartyPopper size={20} strokeWidth={2.5} className="text-accentDark" />
+            <PartyPopper size={20} strokeWidth={2.5} className="text-accentInk" />
           ) : (
             <Flame
               size={20}
@@ -109,7 +107,7 @@ export default function HabitChainCard({ habit, log, onToggleToday, onToggleDay,
           )}
           <span
             className={`text-[12px] leading-none font-extrabold tabular-nums mt-0.5 ${
-              isComplete ? 'text-accentDark' : streak > 0 ? 'text-orangeDark' : 'text-textMuted'
+              isComplete ? 'text-accentInk' : streak > 0 ? 'text-orangeInk' : 'text-textMuted'
             }`}
           >
             {isComplete ? filledCount : streak}
@@ -140,19 +138,19 @@ export default function HabitChainCard({ habit, log, onToggleToday, onToggleDay,
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
             <span
               className={chipClass}
-              style={isComplete ? { background: '#DFFAB8', color: '#46A302' } : { background: tint(color), color: '#3C3C3C' }}
+              style={isComplete ? { background: '#DFFAB8', color: '#2A6E00' } : { background: tint(color), color: '#3C3C3C' }}
             >
               {isComplete ? t('challengeComplete') : t('challengeProgress', { done: filledCount, total: targetDays })}
             </span>
             {streak > 0 && !isComplete && (
-              <span className={`${chipClass} bg-orangeSoft text-orangeDark`}>{t('streak', { n: streak })}</span>
+              <span className={`${chipClass} bg-orangeSoft text-orangeInk`}>{t('streak', { n: streak })}</span>
             )}
           </div>
         </div>
 
         <button
           onClick={onDelete}
-          className={`${iconButtonClass} shrink-0 -mr-1 hover:!bg-pomSoft hover:!text-coral`}
+          className={`${iconButtonClass} shrink-0 -mr-1 hover:!bg-pomSoft hover:!text-coralInk`}
           aria-label={t('deleteHabit')}
         >
           <X size={16} strokeWidth={2.5} />
@@ -168,7 +166,7 @@ export default function HabitChainCard({ habit, log, onToggleToday, onToggleDay,
               <div key={opt} className="relative max-w-full">
                 <button
                   onClick={() => confirmOption(opt)}
-                  className="press max-w-full truncate h-9 pl-3.5 pr-8 rounded-xl text-[13px] font-bold border-2 border-border bg-white text-textPrimary shadow-[0_3px_0_#E5E7EB] hover:border-accent hover:bg-accentSoft hover:text-accentDark transition-colors"
+                  className="press max-w-full truncate h-9 pl-3.5 pr-8 rounded-xl text-[13px] font-bold border-2 border-border bg-white text-textPrimary shadow-[0_3px_0_#E5E7EB] hover:border-accent hover:bg-accentSoft hover:text-accentInk transition-colors"
                 >
                   {opt}
                 </button>
@@ -178,7 +176,7 @@ export default function HabitChainCard({ habit, log, onToggleToday, onToggleDay,
                     onDeleteOption(opt)
                   }}
                   aria-label={t('deleteOption')}
-                  className="absolute top-1/2 right-1.5 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-lg text-textMuted hover:text-coral hover:bg-pomSoft transition-colors"
+                  className="absolute top-1/2 right-1.5 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-lg text-textMuted hover:text-coralInk hover:bg-pomSoft transition-colors"
                 >
                   <X size={12} strokeWidth={2.5} />
                 </button>
@@ -199,7 +197,7 @@ export default function HabitChainCard({ habit, log, onToggleToday, onToggleDay,
             ) : (
               <button
                 onClick={() => setAddingOption(true)}
-                className="h-9 px-3 rounded-xl text-[13px] font-bold border-2 border-dashed border-borderStrong text-textMuted hover:border-accent hover:text-accentDark transition-colors flex items-center gap-1"
+                className="h-9 px-3 rounded-xl text-[13px] font-bold border-2 border-dashed border-borderStrong text-textMuted hover:border-accent hover:text-accentInk transition-colors flex items-center gap-1"
               >
                 <Plus size={14} strokeWidth={3} />
                 {t('addOption')}
@@ -224,7 +222,7 @@ export default function HabitChainCard({ habit, log, onToggleToday, onToggleDay,
 
       {todayNote && (
         <div className="flex items-center gap-1.5 min-w-0 text-[13px] font-medium text-textSecondary">
-          <span className={`${chipClass} shrink-0 bg-accentSoft text-accentDark`}>{t('todayNote')}</span>
+          <span className={`${chipClass} shrink-0 bg-accentSoft text-accentInk`}>{t('todayNote')}</span>
           <span className="truncate">{todayNote}</span>
         </div>
       )}

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
-import { format } from 'date-fns'
+import { todayISO } from '../utils/day'
 import { useTranslation } from '../i18n/LanguageContext'
 import LearningGoalCard, { SUB_CATEGORY_STYLES } from './LearningGoalCard'
 import JournalEntry from './JournalEntry'
@@ -118,7 +118,7 @@ export default function LearningPage({
   const [activeSub, setActiveSub] = useState('books')
   const [adding, setAdding] = useState(false)
 
-  const todayKey = format(new Date(), 'yyyy-MM-dd')
+  const todayKey = todayISO()
   const todayEntries = journalEntries.filter((e) => e.date === todayKey)
   const visibleGoals = learningGoals.filter((g) => g.subCategory === activeSub)
   const activeStyle = SUB_CATEGORY_STYLES[activeSub]

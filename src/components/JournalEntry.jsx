@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { format } from 'date-fns'
+import { dateFromISO, todayISO } from '../utils/day'
 import { Pencil, X, PenLine, Plus } from 'lucide-react'
 import { useTranslation } from '../i18n/LanguageContext'
 import Button from './ui/Button'
@@ -32,7 +33,7 @@ function JournalItem({ entry, onEdit, onDelete }) {
             </button>
             <button
               onClick={onDelete}
-              className={`${iconButtonClass} hover:!bg-pomSoft hover:!text-coral`}
+              className={`${iconButtonClass} hover:!bg-pomSoft hover:!text-coralInk`}
               aria-label={t('deleteEntry')}
             >
               <X size={16} strokeWidth={2.6} />
@@ -88,10 +89,10 @@ export default function JournalEntry({ entries, onAdd, onEdit, onDelete }) {
     <Card className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-accentSoft">
-          <PenLine size={20} strokeWidth={2.5} className="text-accentDark" />
+          <PenLine size={20} strokeWidth={2.5} className="text-accentInk" />
         </div>
         <h2 className="flex-1 min-w-0 text-[18px] leading-snug font-extrabold text-textPrimary">{t('journalPrompt')}</h2>
-        <span className={`${chipClass} shrink-0 bg-accentSoft text-accentDark tabular-nums`}>{format(new Date(), 'd MMM')}</span>
+        <span className={`${chipClass} shrink-0 bg-accentSoft text-accentInk tabular-nums`}>{format(dateFromISO(todayISO()), 'd MMM')}</span>
       </div>
 
       <div>

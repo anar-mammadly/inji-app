@@ -45,7 +45,7 @@ export default function AddTaskForm({ onAdd, onCancel }) {
               style={
                 selected
                   ? { background: cat.bg, color: cat.text, borderColor: cat.dot }
-                  : { borderColor: '#E5E7EB', color: '#9CA0A8' }
+                  : { borderColor: '#E5E7EB', color: '#636B78' }
               }
             >
               {t(CATEGORY_LABEL_KEYS[value])}

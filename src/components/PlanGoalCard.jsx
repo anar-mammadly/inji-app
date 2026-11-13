@@ -19,7 +19,7 @@ export default function PlanGoalCard({ goal, onUpdateProgress, onDelete }) {
       <div className="flex items-start gap-3">
         <span
           className={`flex h-10 w-10 items-center justify-center rounded-2xl shrink-0 ${
-            reached ? 'bg-accentSoft text-accentDark' : 'bg-purpleSoft text-purpleDark'
+            reached ? 'bg-accentSoft text-accentInk' : 'bg-purpleSoft text-purpleInk'
           }`}
         >
           <Target size={20} strokeWidth={2.5} />
@@ -34,7 +34,7 @@ export default function PlanGoalCard({ goal, onUpdateProgress, onDelete }) {
         </div>
         <button
           onClick={onDelete}
-          className="-mr-1 -mt-1 flex h-9 w-9 items-center justify-center rounded-xl text-textMuted transition-colors hover:bg-pomSoft hover:text-coral shrink-0"
+          className="-mr-1 -mt-1 flex h-9 w-9 items-center justify-center rounded-xl text-textMuted transition-colors hover:bg-pomSoft hover:text-coralInk shrink-0"
           aria-label={t('delete')}
         >
           <X size={16} strokeWidth={2.6} />

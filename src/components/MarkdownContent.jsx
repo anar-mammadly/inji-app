@@ -15,13 +15,13 @@ export default function MarkdownContent({ text }) {
           p: ({ node, ...props }) => <p className="mb-2 last:mb-0" {...props} />,
           ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-2 flex flex-col gap-1 marker:text-accent" {...props} />,
           ol: ({ node, ...props }) => (
-            <ol className="list-decimal pl-5 mb-2 flex flex-col gap-1 marker:text-accentDark marker:font-bold" {...props} />
+            <ol className="list-decimal pl-5 mb-2 flex flex-col gap-1 marker:text-accentInk marker:font-bold" {...props} />
           ),
           li: ({ node, ...props }) => <li className="pl-0.5" {...props} />,
           strong: ({ node, ...props }) => <strong className="font-extrabold" {...props} />,
           a: ({ node, ...props }) => (
             <a
-              className="font-semibold text-blueDark underline decoration-2 underline-offset-2 decoration-blue/40 hover:decoration-blue"
+              className="font-semibold text-blueInk underline decoration-2 underline-offset-2 decoration-blue/40 hover:decoration-blue"
               target="_blank"
               rel="noreferrer"
               {...props}
@@ -46,7 +46,7 @@ export default function MarkdownContent({ text }) {
               )
             }
             return (
-              <code className="px-1.5 py-0.5 rounded-md bg-pomSoft text-coralDark text-[13px] font-mono" {...props}>
+              <code className="px-1.5 py-0.5 rounded-md bg-pomSoft text-coralInk text-[13px] font-mono" {...props}>
                 {children}
               </code>
             )

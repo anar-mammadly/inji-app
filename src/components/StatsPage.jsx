@@ -1,4 +1,4 @@
-import { BookOpen, Briefcase, Heart, Layers, Tags, Trophy } from 'lucide-react'
+import { BookOpen, Briefcase, Heart, Layers, Tags, Timer, Trophy } from 'lucide-react'
 import { useTranslation } from '../i18n/LanguageContext'
 import { CATEGORIES, CATEGORY_LABEL_KEYS, categoryStyles } from '../utils/categories'
 import { getBoardName } from '../utils/boards'
@@ -28,10 +28,14 @@ function EmptyLine({ children }) {
   return <p className="py-4 text-center text-[14px] font-bold text-textMuted">{children}</p>
 }
 
-export default function StatsPage({ categoryCounts, completedTasks = [], onResetStats, boards = [], tasks = [] }) {
+export default function StatsPage({ categoryCounts, completedTasks = [], onResetStats, boards = [], tasks = [], pomodoroHistory = [] }) {
   const { t } = useTranslation()
   const total = CATEGORIES.reduce((sum, c) => sum + (categoryCounts[c] || 0), 0)
   const boardTotal = tasks.filter((task) => task.col === 'done').length
+  const finished = pomodoroHistory.filter((p) => p.completed)
+  const focusDone = finished.length
+  // entries from before block lengths became adjustable have no `minutes`
+  const focusMinutes = finished.reduce((sum, p) => sum + (p.minutes ?? 25), 0)
 
   return (
     <Page width="normal">
@@ -51,12 +55,12 @@ export default function StatsPage({ categoryCounts, completedTasks = [], onReset
 
       {/* headline numbers */}
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-5">
-        <div className="col-span-3 sm:col-span-1 flex items-center gap-3 rounded-3xl bg-accent p-4 sm:p-5 text-white shadow-[0_4px_0_#46A302]">
+        <div className="col-span-3 sm:col-span-1 flex items-center gap-3 rounded-3xl bg-accent p-4 sm:p-5 text-onAccent shadow-[0_4px_0_#46A302]">
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/25">
             <Trophy size={24} strokeWidth={2.6} />
           </span>
           <div className="min-w-0">
-            <div className="text-[13px] font-bold text-white/90 truncate">{t('totalCompleted')}</div>
+            <div className="text-[13px] font-bold text-onAccent/80 truncate">{t('totalCompleted')}</div>
             <div className="text-[32px] font-extrabold leading-none tabular-nums mt-0.5">{total}</div>
           </div>
         </div>
@@ -81,7 +85,7 @@ export default function StatsPage({ categoryCounts, completedTasks = [], onReset
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 items-start">
         <Card className="min-w-0">
-          <SectionTitle icon={Tags} color={colors.purpleDark} bg="#F3E4FF">
+          <SectionTitle icon={Tags} color="#7429C4" bg="#F3E4FF">
             {t('byCategory')}
           </SectionTitle>
 
@@ -132,7 +136,7 @@ export default function StatsPage({ categoryCounts, completedTasks = [], onReset
 
         {boards.length > 0 && (
           <Card className="min-w-0">
-            <SectionTitle icon={Layers} color={colors.blueDark} bg="#DDF4FF">
+            <SectionTitle icon={Layers} color="#086393" bg="#DDF4FF">
               {t('byBoard')}
             </SectionTitle>
             {boardTotal === 0 ? (
@@ -159,6 +163,26 @@ export default function StatsPage({ categoryCounts, completedTasks = [], onReset
             )}
           </Card>
         )}
+
+        <Card className="min-w-0">
+          <SectionTitle icon={Timer} color="#BE1F1F" bg="#FFE3E3">
+            {t('focusStatsTitle')}
+          </SectionTitle>
+          {focusDone === 0 ? (
+            <EmptyLine>{t('focusStatsEmpty')}</EmptyLine>
+          ) : (
+            <dl className="grid grid-cols-2 gap-3">
+              <div className="rounded-2xl bg-surfaceAlt p-3">
+                <dd className="text-[26px] font-extrabold leading-none tabular-nums text-textPrimary">{focusDone}</dd>
+                <dt className="mt-1 text-[13px] font-bold text-textSecondary">{t('focusStatsSessions')}</dt>
+              </div>
+              <div className="rounded-2xl bg-surfaceAlt p-3">
+                <dd className="text-[26px] font-extrabold leading-none tabular-nums text-textPrimary">{focusMinutes}</dd>
+                <dt className="mt-1 text-[13px] font-bold text-textSecondary">{t('focusStatsMinutes')}</dt>
+              </div>
+            </dl>
+          )}
+        </Card>
       </div>
     </Page>
   )

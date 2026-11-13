@@ -3,6 +3,9 @@
 // Keep in sync with src/utils/colors.js (the JS mirror used for SVG / motion).
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
+  // hover styles only where there is a real pointer — on touch screens a tap
+  // would otherwise leave the hover state stuck on
+  future: { hoverOnlyWhenSupported: true },
   theme: {
     extend: {
       screens: {
@@ -15,9 +18,10 @@ export default {
         surfaceAlt: '#F1F4F9',
         border: '#E5E7EB',
         borderStrong: '#D1D5DB',
+        // all three read at 4.5:1 or better on every surface colour above
         textPrimary: '#3C3C3C',
-        textSecondary: '#6B7280',
-        textMuted: '#9CA0A8',
+        textSecondary: '#4B5563',
+        textMuted: '#636B78',
         ink: '#3C3C3C',
         inkSoft: '#4B4B4B',
         accent: '#58CC02',
@@ -43,6 +47,20 @@ export default {
         yellowSoft: '#FFF4C2',
         pink: '#FF86D0',
         pinkDark: '#E5559F',
+        // The candy colours are for fills. Text needs its own, deeper shades:
+        //   on*   — text sitting on a bright fill (dark ink, not white: white
+        //           on these greens and blues is only ~2:1)
+        //   *Ink  — coloured text on white or on the matching soft tint
+        onAccent: '#12340A',
+        onBlue: '#06293D',
+        danger: '#DC2626',
+        dangerDark: '#B91C1C',
+        accentInk: '#2A6E00',
+        blueInk: '#086393',
+        orangeInk: '#8F4B00',
+        coralInk: '#BE1F1F',
+        purpleInk: '#7429C4',
+        yellowInk: '#7A5A00',
       },
       fontFamily: {
         sans: ['Nunito', 'system-ui', 'sans-serif'],
